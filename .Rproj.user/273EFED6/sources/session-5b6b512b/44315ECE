@@ -1,0 +1,26 @@
+{
+    "id": "44315ECE",
+    "path": "~/GitHub/LRW-update/r/cdms_login.R",
+    "project_path": "r/cdms_login.R",
+    "type": "r_source",
+    "hash": "1674507340",
+    "contents": "",
+    "dirty": false,
+    "created": 1719958713281.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "1,0",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1719959079,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1719959079668,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,21 @@
+"0","if(grsme_data == 'fins'){ # if using FINS-downloaded data
+  GRSME_df <- read_csv('../data/TrappingData.csv') %>%
+
+    # I need to fix the code below if I want a dynamic import and to save FINs files with a date appended to the end. Otherwise the code above is sufficient.
+    
+    # GRSME_df <- read_csv(paste0('./data/TrappingData_Fins_', max(str_extract(files[which(grepl('TrappingData_Fins_', list.files('./data/')))], '\\d{6}')), '.csv')) %>%
+
+  clean_weirData() %>%
+mutate(trapped_date = ymd(trapped_date), # make sure trapped_date is a date datatype
+MonthDay = format(as.Date(trapped_date), '%m/%d')) # so this can work properly.
+}
+"
+"2","[1mRows: [22m[34m119[39m [1mColumns: [22m[34m65[39m"
+"2","[36m──[39m [1mColumn specification[22m [36m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "",""
+[31mchr[39m (33): Trapped Date, Facility, Trap, Trapping Session Name, Target Species, Target Run, Trapping Session Comments, Species, Run, Sex, Origin, Origin E...
+[32mdbl[39m (10): Fish ID, Count, Length, Age Criteria Start Length, Age Criteria End Length, Release Site Latitude, Release Site Longitude, Existing Marks Quant...
+[33mlgl[39m (22): Finalize, Verify, Follow-Up, Is Import, Trap Is Offsite, Origin Start Date, Origin End Date, Age Calculated, Moved To Is Offsite, Offsite Owner..."
+"2","
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message."
