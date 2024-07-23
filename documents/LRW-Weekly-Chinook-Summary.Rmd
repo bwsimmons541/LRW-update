@@ -11,12 +11,16 @@ output: pdf_document
 ```{r Loadout, include=FALSE}
 # Load Packages ----
 # devtools::install_github("DesiQuintans/librarian") # if you need librarian package
-# Install packages if necessary
-  # devtools::install_git('ryankinzer/cuyem')
-  # devtools::install_git('ryankinzer/cdmsR')
-  # install.packages('tidyverse')
-  # install.packages('flextable')
-  # install.packages('knitr')
+# # Install packages if necessary
+#   install.packages('devtools')
+#   devtools::install_github('ryankinzer/cuyem')
+#   devtools::install_github('ryankinzer/cdmsR')
+#   install.packages('tidyverse')
+#   install.packages('flextable')
+#   install.packages('knitr')
+#   install.packages('Rtools')
+#   install.packages('tinytex')
+#   tinytex::install_tinytex()
 
 # Load Packages
 library(tidyverse)
@@ -24,6 +28,7 @@ library(knitr)
 library(flextable)
 library(cdmsR)
 library(cuyem)
+  
 
 
 
@@ -352,8 +357,10 @@ Bratcher, K (ODFW)\\
 Brigante, E (ODFW)\\
 Bronson, P (CTUIR)\\
 Bonifer, J (CTUIR)\\
+Burak, G (FWS)\\
 Craft, N (ODFW)\\
 Deal, D (ODFW)\\
+Dittmer, J(ODFW)\\
 Engle, R (FWS)\\
 Farnam, B (NOAA)\\ 
 Feldhaus, J (ODFW)\\
@@ -365,10 +372,10 @@ Hagenah, P (Landowner)\\
 Harbeck, J (NPT)\\
 Harrod, R (ODFW)\\ 
 Hesse, J (NPT)\\
-Humphreys, J (TU)\\
-Johnson, B (NPT)\\
 \end{minipage}
 \begin{minipage}[t]{0.25\textwidth}
+Humphreys, J (TU)\\
+Johnson, B (NPT)\\
 Johnson, D (NPT)\\
 Kozlowski, C (ODFW)\\
 Lance, M (ODFW)\\
@@ -377,9 +384,7 @@ Maxwell, A (TU)\\
 McLean, M (CTUIR)\\
 Nisbitt, K (Wallowa CTY)\\
 Oatman, J (NPT)\\
-Robertson, M (FWS)\\
 Rumelhart, R (NPT)\\
-Ruzycki, J (ODFW)\\
 Treadway, E (ODFW)\\
 Smith, J (ODFW)\\
 Vatland, S (NPT)\\
@@ -400,8 +405,16 @@ Zollman, R (NPT)\\
 \end{center}
 
 \begin{center}
+{\large Collin Hendricks\\}
+Northeast Oregon Chinook Evaluations\\
+Biologist I\\
+541-432-2517\\
+collinh@nezperce.org\\
+\end{center}
+
+\begin{center}
 {\large Brian Simmons \\}
-Grande Ronde Supplementation Monitoring and Evaluation\\
+Northeast Oregon Chinook Evaluations\\
 Project Leader\\
 541-432-2515\\
 brians@nezperce.org\vspace{5mm} 
