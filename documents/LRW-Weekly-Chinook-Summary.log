@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.7.23)  23 JUL 2024 13:50
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.7.23)  24 JUL 2024 10:34
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -591,7 +591,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 394--416
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 418--440
+Underfull \hbox (badness 10000) in paragraph at lines 418--441
 
  []
 
@@ -615,7 +615,7 @@ Here is how much of TeX's memory you used:
  14 hyphenation exceptions out of 8191
  75i,7n,79p,871b,472s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/Users/brians/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb><c:/Users/brians/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb><c:/Users/brians/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr12.pfb><c:/Users/brians/AppData/Roaming/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb>
-Output written on LRW-Weekly-Chinook-Summary.pdf (4 pages, 1026724 bytes).
+Output written on LRW-Weekly-Chinook-Summary.pdf (4 pages, 1027384 bytes).
 PDF statistics:
  59 PDF objects out of 1000 (max. 8388607)
  41 compressed objects within 1 object stream

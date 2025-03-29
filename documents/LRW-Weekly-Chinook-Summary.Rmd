@@ -87,7 +87,7 @@ if(download_FINS_CDMS == TRUE) {
     mutate(MonthDay = format(as.Date(trapped_date), '%m/%d'),
            count = as.double(count)) 
 }
-
+# KUS is no longer an option. clean up this list of code.
 if(grsme_data == 'kus'){ # if using Kus-downloaded data
   GRSME_df <- read_csv(paste0('../data/FINS_trapping_NPT_GRSME_Program_', max(str_extract(files[which(grepl('FINS_trapping_NPT_GRSME_Program', list.files('../data/')))], '\\d{4}[-]\\d{2}[-]\\d{2}')), '.csv')) %>%
     mutate(trapped_date = mdy(trapped_date), # make sure trapped_date is a date datatype
