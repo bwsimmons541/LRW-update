@@ -1,4 +1,0 @@
-"0","table_3 <- sumGRSMEbrood(data = GRSME_df, trap.year = trap.year)
-"
-"2","`summarise()` has grouped output by 'origin', 'EpiWeek'. You can override using the `.groups` argument."
-"2","`summarise()` has grouped output by 'species', 'origin', 'EpiWeek'. You can override using the `.groups` argument."
