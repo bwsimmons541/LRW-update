@@ -15,6 +15,9 @@ format:
     toc: false
     cap-location: top
 editor: visual
+
+params:
+  trap_year: 2024
 ---
 
 ```{r}
@@ -51,7 +54,7 @@ source("../R/make_trap_date.R")
 
 #---- Dates ----
 summary_date <- format(Sys.time(), "%B %d, %Y")
-trap.year <-  2024#year(Sys.time())
+trap.year <-  params$trap_year
 
 #---- Set values ----
 # Data source selection
@@ -64,22 +67,26 @@ files <- list.files(path = "../data/")
 
 
 ```{r}
-#| label: estimates-and-goals
+#| label: load-yearly-estimates
 #| include: false
 
-# ---- Season Return Estimates ----
-estimate_date <- "June 12, 2024"  # format: "Month DD, YYYY"
-nat_adults <- "326"
-hat_adults <- "362"
+# Load yearly forecast estimates, brood collection targets and sliding scale from CSV
+yearly_estimates <- read_csv("../data/yearly_estimates.csv")
 
-# ---- Brood Stock Collection Goals ----
-n_brood_goal <- "48"   # Natural-origin adults
-h_brood_goal <- "112"  # Hatchery-origin adults
-hj_brood_goal <- "6"   # Hatchery-origin jacks (always 6)
+# Filter the row matching the current trap year
+selected_estimates <- yearly_estimates |>
+  filter(year == trap.year) |>
+  slice(1)
 
-# ---- Sliding Scale Goals ----
-ss_upstream <- "50%"  # % hatchery passed upstream
-ss_brood <- "30%"     # % natural kept for brood
+# Assign the values to variables used throughout the report
+estimate_date  <- selected_estimates$estimate_date
+nat_adults     <- selected_estimates$nat_adults
+hat_adults     <- selected_estimates$hat_adults
+n_brood_goal   <- selected_estimates$n_brood_goal
+h_brood_goal   <- selected_estimates$h_brood_goal
+hj_brood_goal  <- selected_estimates$hj_brood_goal
+ss_upstream    <- selected_estimates$ss_upstream
+ss_brood       <- selected_estimates$ss_brood
 ```
 
 ```{r}
@@ -558,7 +565,6 @@ Biologist I\\
 \texttt{neale@nezperce.org}
 \end{center}
 
-\vspace{2mm}
 
 \begin{center}
 {\large Brian Simmons}\\
