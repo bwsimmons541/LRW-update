@@ -41,6 +41,7 @@ library(flextable)
 library(cdmsR)
 library(cuyem)
 library(officer)
+library(readxl)
 
 # Source custom R scripts
 source("../R/cdms_login.R")
@@ -61,13 +62,6 @@ grsme_data <- "fins"         # Options: 'fins'
 files <- list.files(path = "../data/")
 ```
 
-```{r}
-#| label: summary-date
-#| include: false
-
-
-
-```
 
 ```{r}
 #| label: estimates-and-goals
@@ -127,7 +121,7 @@ if (download_FINS_CDMS == TRUE) {
 # ---- Load pre-processed FINS data (CSV) ----
 
 if (grsme_data == "fins") {
-  GRSME_df <- read_csv("../data/TrappingData.csv") |>
+  GRSME_df <- read_xlsx("../data/TrappingData.xlsx") |>
     clean_weirData() |>
     mutate(
       trapped_date = ymd(trapped_date),
