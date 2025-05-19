@@ -6,8 +6,10 @@ get_fins_data <- function(
     end_date = Sys.Date(),
     module = "Adult Weir",
     facility = "NPT GRSME Program",
-    apikey = "fXegxGXlJdWU0WaTsSh1qh9u7v9kn3ZR"
+    apikey = Sys.getenv("FINS_API_KEY")
 ) {
+  if (apikey == "") stop("API key not found. Make sure FINS_API_KEY is set as an environment variable.")
+  
   url <- "https://fins.psmfc.org/api/v1/data"
   
   res <- httr::GET(url, query = list(

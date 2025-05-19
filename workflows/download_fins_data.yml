@@ -28,6 +28,9 @@ jobs:
       - name: Run download script
         run: Rscript R/nightly_fins_download.R
 
+      - name: Export FINS API key
+        run: echo "FINS_API_KEY=${{ secrets.FINS_API_KEY }}" >> $GITHUB_ENV
+      
       - name: Commit new data file
         run: |
           git config user.name "github-actions"
