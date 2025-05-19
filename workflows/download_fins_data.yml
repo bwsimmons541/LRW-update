@@ -1,0 +1,37 @@
+name: Nightly FINS Data Download
+
+on:
+  schedule:
+    - cron: '5 2 * * *'  # 2:05 AM UTC = 7:05 PM PT
+  workflow_dispatch:      # Optional: allows manual run via GitHub
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install R packages
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            httr
+            jsonlite
+            lubridate
+            readr
+
+      - name: Run download script
+        run: Rscript R/nightly_fins_download.R
+
+      - name: Commit new data file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/TrappingData_FINS_*.csv
+          git commit -m "Nightly FINS data download"
+          git push
