@@ -25,32 +25,21 @@ params:
 #| include: false
 
 # ---- Load Packages ----
-# If needed, install packages:
-# devtools::install_github("DesiQuintans/librarian")
-# install.packages("devtools")
-# devtools::install_github("ryankinzer/cuyem")
-# devtools::install_github("ryankinzer/cdmsR")
-# install.packages("tidyverse")
-# install.packages("flextable")
-# install.packages("knitr")
-# install.packages("Rtools")
-# install.packages("tinytex")
-# tinytex::install_tinytex()
+
 
 # Load libraries
 library(tidyverse)
 library(knitr)
 library(flextable)
-library(cdmsR)
-library(cuyem)
 library(officer)
-library(readxl)
+
 
 # Source custom R scripts
-source("../R/cdms_login.R")
-source("../R/sumGRSMEdisp.R")  # FINS Disposition Summary
-source("../R/sumGRSMEbrood.R") # Brood Collection Summary
-source("../R/make_trap_date.R")
+# source("../R/cdms_login.R")
+# source("../R/sumGRSMEdisp.R")  # FINS Disposition Summary
+# source("../R/sumGRSMEbrood.R") # Brood Collection Summary
+# source("../R/make_trap_date.R")
+source("../R/report_helpers.R")
 
 #---- Dates ----
 summary_date <- format(Sys.time(), "%B %d, %Y")
@@ -58,331 +47,111 @@ trap.year <-  params$trap_year
 
 #---- Set values ----
 # Data source selection
-download_FINS_CDMS <- FALSE  # TRUE = fetch new data from CDMS; FALSE = use cached .rda
-grsme_data <- "fins"         # Options: 'fins'
+# download_FINS_CDMS <- FALSE  # TRUE = fetch new data from CDMS; FALSE = use cached .rda
+# grsme_data <- "fins"         # Options: 'fins'
 
-# File listing
-files <- list.files(path = "../data/")
+# # File listing
+# files <- list.files(path = "../data/")
 ```
-
 
 ```{r}
 #| label: load-yearly-estimates
 #| include: false
 
-# Load yearly forecast estimates, brood collection targets and sliding scale from CSV
-yearly_estimates <- read_csv("../data/yearly_estimates.csv")
+# # Load yearly forecast estimates, brood collection targets and sliding scale from CSV
+# yearly_estimates <- read_csv("../data/yearly_estimates.csv")
+# 
+# # Filter the row matching the current trap year
+# selected_estimates <- yearly_estimates |>
+#   filter(year == trap.year) |>
+#   slice(1)
+# 
+# # Assign the values to variables used throughout the report
+# estimate_date  <- selected_estimates$estimate_date
+# nat_adults     <- selected_estimates$nat_adults
+# hat_adults     <- selected_estimates$hat_adults
+# n_brood_goal   <- selected_estimates$n_brood_goal
+# h_brood_goal   <- selected_estimates$h_brood_goal
+# hj_brood_goal  <- selected_estimates$hj_brood_goal
+# ss_upstream    <- selected_estimates$ss_upstream
+# ss_brood       <- selected_estimates$ss_brood
 
-# Filter the row matching the current trap year
-selected_estimates <- yearly_estimates |>
-  filter(year == trap.year) |>
-  slice(1)
+estimates <- load_yearly_estimates(trap.year)
 
-# Assign the values to variables used throughout the report
-estimate_date  <- selected_estimates$estimate_date
-nat_adults     <- selected_estimates$nat_adults
-hat_adults     <- selected_estimates$hat_adults
-n_brood_goal   <- selected_estimates$n_brood_goal
-h_brood_goal   <- selected_estimates$h_brood_goal
-hj_brood_goal  <- selected_estimates$hj_brood_goal
-ss_upstream    <- selected_estimates$ss_upstream
-ss_brood       <- selected_estimates$ss_brood
+estimate_date  <- estimates$estimate_date
+nat_adults     <- estimates$nat_adults
+hat_adults     <- estimates$hat_adults
+n_brood_goal   <- estimates$n_brood_goal
+h_brood_goal   <- estimates$h_brood_goal
+hj_brood_goal  <- estimates$hj_brood_goal
+ss_upstream    <- estimates$ss_upstream
+ss_brood       <- estimates$ss_brood
 ```
 
 ```{r}
-#| label: get-data
+#| label: get-grsme-data
 #| include: false
+#| echo: false
 
-# ---- Adult Weir (FINS) Data ----
+# Load full historical data for use in historic catch comparison
+# AdultWeirData <- load_weir_data("../data/AdultWeirData.rda")
+# AdultWeirData_clean <- clean_weir_data(AdultWeirData)
+# 
+# GRSME_df <- get_grsme_df(trap_year = trap.year, grsme_data = "fins")
 
-if (download_FINS_CDMS == TRUE) {
-  # Download new data
-  AdultWeirData <- get_WeirData(Facility = "NPT GRSME Program")
+data_list <- get_trap_data(download_cdms = FALSE, trap_year = 2024)
 
-  # Save to disk for reuse
-  save(AdultWeirData, file = "../data/AdultWeirData.rda")
+AdultWeirData_clean <- data_list$AdultWeirData_clean
+grsme_df <- data_list$grsme_df
 
-  # Clean weir data
-  AdultWeirData_clean <- clean_weirData(AdultWeirData) |>
-    mutate(
-      MonthDay = format(as.Date(trapped_date), "%m/%d"),
-      count = as.double(count)
-    )
 
-  # Assign to GRSME_df (potentially redundant filter)
-  GRSME_df <- AdultWeirData_clean |>
-    filter(facility == "NPT GRSME Program")
-
-} else {
-  # Load existing data
-  load(file = "../data/AdultWeirData.rda")
-
-  # Clean weir data
-  AdultWeirData_clean <- clean_weirData(AdultWeirData) |>
-    mutate(
-      MonthDay = format(as.Date(trapped_date), "%m/%d"),
-      count = as.double(count)
-    )
-}
-
-# ---- Load pre-processed FINS data (CSV) ----
-
-if (grsme_data == "fins") {
-  GRSME_df <- read_xlsx("../data/TrappingData.xlsx") |>
-    clean_weirData() |>
-    mutate(
-      trapped_date = ymd(trapped_date),
-      MonthDay = format(as.Date(trapped_date), "%m/%d")
-    )
-}
 ```
 
 ```{r}
 #| label: data-processing-dispositions
 #| include: false
 
-# ---- Disposition Summaries ----
+dispositions <- calculate_dispositions(grsme_df, trap.year)
 
-# Hatchery-origin Chinook
-h_df <- sumGRSMEdisp(
-  data = GRSME_df,
-  origin_ = "Hatchery",
-  trap.year = trap.year
-)
-
-# Natural-origin Chinook
-n_df <- sumGRSMEdisp(
-  data = GRSME_df,
-  origin_ = "Natural",
-  trap.year = trap.year
-)
-
-# ---- Composition Percentages ----
-
-# Upstream passage
-hat_up <- as.numeric(str_extract(h_df[[1, 5]], "^\\d+"))
-nat_up <- as.numeric(str_extract(n_df[[1, 5]], "^\\d+"))
-h_upstream_calc <- round((hat_up / (hat_up + nat_up)) * 100, 0)
-
-# Broodstock retention
-hat_bs <- as.numeric(str_extract(h_df[[2, 5]], "^\\d+"))
-nat_bs <- as.numeric(str_extract(n_df[[2, 5]], "^\\d+"))
-n_brood_calc <- round((nat_bs / (hat_bs + nat_bs)) * 100, 0)
+h_df <- dispositions$h_df
+n_df <- dispositions$n_df
+h_upstream_calc <- dispositions$h_upstream_calc
+n_brood_calc <- dispositions$n_brood_calc
 ```
 
 ```{r}
 #| label: plot-prep-catch-flow
 #| include: false
 
-# ---- Flow Data: Current Year ----
-
-start_date <- paste0(trap.year, "-05-30")
-end_date <- paste0(trap.year, "-09-30")
-
-req_url <- paste0(
-  "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx?station_nbr=13330000",
-  "&start_date=", start_date, "%2012:00:00%20AM",
-  "&end_date=", end_date, "%2012:00:00%20AM",
-  "&dataset=MDF&format=csv"
-)
-
-flow_df <- read.delim(req_url, sep = "\t") |>
-  mutate(
-    record_date = mdy(record_date),
-    legend = paste(Sys.Date() - 1, "Discharge"),
-    MonthDay = format(as.Date(record_date), "%m/%d"),
-    facet = as.character(trap.year)
-  ) |>
-  select(MonthDay, MeanDailyFlow = mean_daily_flow_cfs, facet)
-
-# ---- Flow Data: Historical (5-year average) ----
-
-start_date_h <- paste0(trap.year - 5, "-05-30")
-end_date_h <- paste0(trap.year - 1, "-09-21")
-
-req_url2 <- paste0(
-  "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx?station_nbr=13330000",
-  "&start_date=", start_date_h, "%2012:00:00%20AM",
-  "&end_date=", end_date_h, "%2012:00:00%20AM",
-  "&dataset=MDF&format=csv"
-)
-
-flow_df_h <- read.delim(req_url2, sep = "\t") |>
-  mutate(
-    record_date = mdy(record_date),
-    legend = paste(Sys.Date() - 1, "Discharge"),
-    MonthDay = format(as.Date(record_date), "%m/%d")
-  ) |>
-  group_by(MonthDay) |>
-  summarise(MeanDailyFlow = mean(mean_daily_flow_cfs, na.rm = TRUE)) |>
-  mutate(
-    facet = paste0(trap.year - 5, "-", trap.year - 1, " Average")
-  )
-
-# ---- Combine Flow Data ----
-
-flow_all <- bind_rows(flow_df, flow_df_h) |>
-  mutate(
-    trapped_date = make_trap_date(MonthDay, trap.year)
-  ) |>
-  filter(
-    between(
-      trapped_date,
-      ymd(paste0(trap.year, "-05-30")),
-      ymd(paste0(trap.year, "-09-21"))
-    )
-  )
-
-# ---- Catch Data: Current Year ----
-
-lrw_catch <- GRSME_df |>
-  filter(
-    species == "Chinook",
-    recap == FALSE,
-    trap_year == trap.year,
-    age_designation == "Adult"
-  ) |>
-  group_by(trapped_date, MonthDay, origin) |>
-  summarise(Catch = sum(count, na.rm = TRUE), .groups = "drop") |>
-  mutate(facet = as.character(trap.year))
-
-# ---- Catch Data: Historic Mean ----
-
-lrw_historic <- AdultWeirData_clean |>
-  filter(
-    facility == "NPT GRSME Program",
-    species == "Chinook",
-    recap == FALSE,
-    !trap_year %in% c(1997:(trap.year - 6), trap.year),
-    age_designation == "Adult"
-  ) |>
-  group_by(MonthDay, origin) |>
-  summarise(AllCatch = sum(count, na.rm = TRUE), .groups = "drop") |>
-  mutate(
-    Catch = AllCatch / 5,
-    trapped_date = make_trap_date(MonthDay, trap.year),
-    facet = paste0(trap.year - 5, "-", trap.year - 1, " Average")
-  )
-
-# ---- Combine Catch Data ----
-
-lrw_all <- bind_rows(lrw_catch, lrw_historic)
-
-# ---- Merge Flow + Catch ----
-
-lrw_megadf <- full_join(
-  lrw_all, flow_all,
-  by = c("trapped_date", "facet", "MonthDay")
-)
-
-# Order facets (current year on top)
-lrw_megadf$facet <- factor(
-  lrw_megadf$facet,
-  levels = c(
-    as.character(trap.year),
-    paste0(trap.year - 5, "-", trap.year - 1, " Average")
-  )
-)
+  mega_list <- prepare_megadf(
+                  trap_year = trap.year,
+                  grsme_df = grsme_df,
+                  weir_data_clean = AdultWeirData_clean
+                )
+  
+  lrw_catch <- mega_list$lrw_catch
+  lrw_megadf <- mega_list$lrw_megadf
 ```
 
 ```{r}
-#| label: graph-creation
+#| label: generate-megaplot
 #| include: false
 
-# ---- Compute Y-Axis Max for Catch ----
-
-plot_max_df <- lrw_catch |>
-  group_by(trapped_date) |>
-  summarise(Count = sum(Catch), .groups = "drop")
-
-plot_max_df2 <- lrw_megadf |>
-  group_by(trapped_date) |>
-  summarise(Count = sum(Catch, na.rm = TRUE), .groups = "drop")
-
-plot_max <- if (max(plot_max_df$Count, na.rm = TRUE) > max(plot_max_df2$Count, na.rm = TRUE)) {
-  round(max(plot_max_df$Count, na.rm = TRUE) + 2, 0)
-} else {
-  round(max(plot_max_df2$Count, na.rm = TRUE) + 2, 0)
-}
-
-# ---- Compute Scale Factor for Dual Y Axis ----
-
-scale_factor <- round(
-  max(lrw_megadf$Catch, na.rm = TRUE) / max(lrw_megadf$MeanDailyFlow, na.rm = TRUE),
-  3
+lrw_megaplot <- generate_lrw_megaplot(
+  megadf = lrw_megadf,
+  lrw_catch = lrw_megadf |> filter(facet == as.character(trap.year)),
+  save_plot = TRUE,
+  output_path = "../LRW_megaplot.jpg"# equivalent to original `lrw_catch`
 )
 
-# ---- Create Plot ----
-
-lrw_megaplot <- ggplot(lrw_megadf, aes(x = trapped_date)) +
-
-  # Bars for catch
-  geom_bar(
-    aes(y = Catch, fill = origin),
-    color = "black",
-    stat = "identity",
-    position = "stack",
-    width = 1
-  ) +
-
-  # Line for flow
-  geom_line(
-    aes(y = MeanDailyFlow * scale_factor, linetype = "Discharge"),
-    color = "blue",
-    size = 1
-  ) +
-
-  # Y-axis (left and right)
-  scale_y_continuous(
-    name = "Number of Chinook Adults",
-    breaks = scales::breaks_pretty(7),
-    limits = c(0, max(0, plot_max)),
-    expand = c(0, 0),
-    sec.axis = sec_axis(
-      ~ . / scale_factor,
-      name = expression(paste("Discharge (" * ft^3 * "/s)")),
-      breaks = scales::breaks_pretty(7)
-    )
-  ) +
-
-  # X-axis
-  scale_x_date(
-    name = "",
-    labels = scales::label_date("%m/%d"),
-    breaks = scales::breaks_pretty(7),
-    expand = c(0.001, 0.001)
-  ) +
-
-  # Appearance
-  scale_fill_manual(values = c("Natural" = "#FDE735FF", "Hatchery" = "#482677FF")) +
-  facet_grid(rows = vars(facet)) +
-  guides(color = FALSE) +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(hjust = 1, angle = 45, size = 14),
-    axis.ticks.length.x = unit(0.15, "cm"),
-    axis.title.y.left = element_text(size = 16),
-    axis.text.y.left = element_text(size = 14),
-    axis.title.y.right = element_text(color = "blue", size = 16),
-    axis.text.y.right = element_text(color = "blue", size = 14),
-    panel.grid.minor = element_blank(),
-    legend.position = "top",
-    legend.title = element_blank(),
-    legend.box.background = element_blank(),
-    panel.spacing = unit(2, "lines")
-  )
-
-# ---- Save Plot ----
-
-ggsave(
-  filename = "LRW_megaplot.jpg",
-  plot = lrw_megaplot,
-  device = "jpeg",
-  path = "./",
-  height = 7,
-  width = 10,
-  units = "in"
-)
+# ggsave(
+#   filename = "LRW_megaplot.jpg",
+#   plot = lrw_megaplot,
+#   device = "jpeg",
+#   width = 10,
+#   height = 7,
+#   units = "in"
+# )
 
 # ---- Display Plot ----
 
@@ -394,7 +163,7 @@ lrw_megaplot
 #| include: false
 
 # ---- Broodstock Collection Summary ----
-table_3 <- sumGRSMEbrood(data = GRSME_df, trap.year = trap.year)
+table_3 <- sumGRSMEbrood(data = grsme_df, trap.year = trap.year)
 ```
 
 ```{r}
@@ -418,7 +187,7 @@ include_graphics(path = "../www/npt_joseph.png")
 -   Composition of adults passed upstream: `r h_upstream_calc`% Hatchery (Sliding scale goal $\leq$ `r ss_upstream`)
 -   Composition of adults kept for brood: `r n_brood_calc`% Natural (Sliding scale goal $\geq$ `r ss_brood`)
 
-**Table 1.** Return year `r trap.year` capture and disposition summary of Hatchery Chinook Salmon (Numbers in parentheses exclude recaptures).
+**Table 1.** `r prepare_caption_table1(trap.year)`
 
 ```{r}
 #| label: table1-hatchery-dispositions
@@ -428,16 +197,16 @@ include_graphics(path = "../www/npt_joseph.png")
 flextable(
   h_df,
   cwidth = c(1.3, 0.7, 0.7, 0.7, 1.2, 1.2)
-) |>
-  align(j = 2:6, align = "right", part = "all") |>
-  hline(i = nrow(h_df) - 1) |>
+) %>%
+  align(j = 2:6, align = "right", part = "all") %>%
+  hline(i = nrow(h_df) - 1) %>%
   set_table_properties(layout = "autofit", width = 0.95)
 
 ```
 
 \newpage
 
-**Table 2.** Return year `r trap.year` capture and disposition summary of Natural-origin Chinook Salmon (Numbers in parentheses exclude recaptures).
+**Table 2.** `r prepare_caption_table2(trap.year)`
 
 ```{r}
 #| label: table2-natural-dispositions
@@ -454,7 +223,7 @@ flextable(
 
 ```
 
-**Table 3.** Return year `r trap.year` weekly summary of captured adult Chinook Salmon and Bull Trout, excluding recaptures. Broodstock collection for Chinook Salmon is shown in parenthesis. \*Asterisk indicates an incomplete week.
+**Table 3.** `r prepare_caption_table3(trap.year)`
 
 ```{r}
 #| label: table3-broodstock
@@ -477,11 +246,11 @@ flextable(
 \begin{minipage}{0.95\linewidth}
 \centering
 
-\includegraphics[width=\linewidth]{LRW_megaplot.jpg}
+\includegraphics[width=\linewidth]{../LRW_megaplot.jpg}
 
 \vspace{3mm}
 
-\textit{Return year \the\year{} (top panel) and five-year average (bottom panel) of mean daily discharge (cubic feet per second) and daily captures of hatchery- and natural-origin adult Chinook salmon at the Lostine River Weir. Discharge recorded at USGS station 1333000 located upstream of the town of Lostine.}
+\textit{`r prepare_caption_plot(trap.year)`}
 
 \end{minipage}
 \end{center}
