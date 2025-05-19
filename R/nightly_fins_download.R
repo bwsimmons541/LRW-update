@@ -15,7 +15,7 @@ try({
   if (!is.data.frame(fins_data)) stop("No data returned from FINS API")
   
   # Save with timestamped filename
-  fname <- paste0("data/TrappingData_FINS_", format(today, "%Y%m%d"), ".csv")
+  fname <- paste0("./data/TrappingData_FINS_", format(today, "%Y%m%d"), ".csv")
   write_csv(fins_data, file = fname)
   
   message("FINS data successfully saved to: ", fname)
