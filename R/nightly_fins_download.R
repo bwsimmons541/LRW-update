@@ -1,22 +1,42 @@
-# scripts/nightly_fins_download.R
+# nightly_fins_download.R
+
+# ---- Load Dependencies ----
 library(httr)
 library(jsonlite)
-library(dplyr)
-library(readr)
 library(lubridate)
-source("./R/get_fins_data.R")  # contains get_fins_data()
+library(readr)
 
-# Set download window for today
-today <- Sys.Date()
+# ---- Source API Function ----
+source("R/get_fins_data.R")
 
-# Safe wrapper
-try({
+# ---- Log Utility Function ----
+log_message <- function(msg, type = "INFO") {
+  timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  full_msg <- paste0("[", type, "] ", timestamp, " - ", msg, "\n")
+  
+  # Ensure logs/ directory exists
+  if (!dir.exists("logs")) dir.create("logs")
+  
+  # Append to log file
+  cat(full_msg, file = "./logs/fins_download.log", append = TRUE)
+}
+
+# ---- Run Download Logic ----
+tryCatch({
+  log_message("Starting nightly FINS data download")
+  
   fins_data <- get_fins_data()
-  if (!is.data.frame(fins_data)) stop("No data returned from FINS API")
   
-  # Save with timestamped filename
-  fname <- paste0("./data/TrappingData_FINS_", format(today, "%Y%m%d"), ".csv")
-  write_csv(fins_data, file = fname)
+  if (!is.data.frame(fins_data) || nrow(fins_data) == 0) {
+    stop("Download returned no data.")
+  }
   
-  message("FINS data successfully saved to: ", fname)
-}, silent = TRUE)
+  # Build filename and save
+  file_name <- paste0("data/TrappingData_FINS_", format(Sys.Date(), "%Y%m%d"), ".csv")
+  write_csv(fins_data, file = file_name)
+  
+  log_message(paste("Successfully saved file:", file_name))
+  
+}, error = function(e) {
+  log_message(paste("Download failed:", conditionMessage(e)), type = "ERROR")
+})
