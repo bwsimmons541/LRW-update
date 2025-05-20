@@ -77,44 +77,7 @@ get_trap_data <- function(download_cdms = TRUE, trap_year = NULL) {
   )
 }
 
-
-# load_weir_data <- function(path = "../data/AdultWeirData.rda") {
-#   load(path)  # loads object: AdultWeirData
-#   AdultWeirData
-# }
-# 
-# clean_weir_data <- function(weir_data) {
-#   weir_data %>%
-#     clean_weirData()%>%
-#     mutate(
-#       MonthDay = format(as.Date(trapped_date), '%m/%d'),
-#       count = as.double(count),
-#       trapped_date = ymd(trapped_date)
-#     )
-# }
-
-#---- Get GRSME Data ----
-
-# get_grsme_df <- function(trap_year, grsme_data = "rda") {
-#   if (grsme_data == "fins") {
-#     readxl::read_xlsx("../data/TrappingData.xlsx") |>
-#       clean_weir_data() |>
-#       filter(facility == "NPT GRSME Program", trap_year == trap_year)
-#   } else {
-#     load_weir_data("data/AdultWeirData.rda") |>
-#       clean_weir_data() |>
-#       filter(facility == "NPT GRSME Program", trap_year == trap_year)
-#   }
-# }
-
 # ---- Make Trap Date ----
-
-
-    # make_trap_date <- function(year, month_day) {
-    #   suppressWarnings(
-    #     lubridate::mdy(paste0(month_day, "/", year))
-    #   )
-    # }
 
 make_trap_date <- function(month_day, year) {
   ymd(paste(year, month_day, sep = "-"))
@@ -146,41 +109,6 @@ calculate_dispositions <- function(data, trap_year) {
   )
 }
 
-# # ---- Prepare Flow Data ----
-# prepare_flow_data <- function(trap_year) {
-#   start_date <- paste0(trap_year, '-05-30')
-#   end_date <- paste0(trap_year, '-09-30')
-#   
-#   req_url <- paste0(
-#     "https://apps.wrd.state.or.us/apps/sw/hydro_near_real_time/hydro_download.aspx?station_nbr=13330000",
-#     "&start_date=", start_date, "%2012:00:00%20AM",
-#     "&end_date=", end_date, "%2012:00:00%20AM",
-#     "&dataset=MDF&format=csv"
-#   )
-#   
-#   read.delim(req_url, sep = '\t') %>%
-#     mutate(
-#       record_date = mdy(record_date),
-#       MonthDay = format(as.Date(record_date), '%m/%d'),
-#       facet = paste(trap_year)
-#     ) %>%
-#     select(MonthDay, MeanDailyFlow = mean_daily_flow_cfs, facet)
-# }
-
-
-# # ---- Prepare Catch Data ----
-# prepare_catch_data <- function(grsme_df, trap_year) {
-#   grsme_df %>%
-#     filter(
-#       species == 'Chinook',
-#       recap == FALSE,
-#       trap_year == !!trap_year,
-#       age_designation == 'Adult'
-#     ) %>%
-#     group_by(trapped_date, MonthDay, origin) %>%
-#     summarize(Catch = sum(count, na.rm = TRUE), .groups = "drop") %>%
-#     mutate(facet = paste(trap_year))
-# }
 
 # ---- Plot Data Prep Function Prepare Mega DF ----
 
@@ -215,17 +143,7 @@ prepare_megadf <- function(trap_year, grsme_df, weir_data_clean) {
     "&end_date=", end_date_h, "%2012:00:00%20AM",
     "&dataset=MDF&format=csv"
   )
-  
-      # flow_df_h <- read.delim(req_url2, sep = "\t") |>
-      #   mutate(
-      #     record_date = lubridate::mdy(record_date),
-      #     MonthDay = format(record_date, "%m/%d")
-      #   ) |>
-      #   group_by(MonthDay) |>
-      #   summarise(MeanDailyFlow = mean(mean_daily_flow_cfs, na.rm = TRUE), .groups = "drop") |>
-      #   mutate(
-      #     facet = paste0(trap_year - 5, "-", trap_year - 1, " Average")
-      #   )
+
   
   flow_df_h <- read.delim(req_url2, sep = "\t") |>
     mutate(
@@ -241,19 +159,6 @@ prepare_megadf <- function(trap_year, grsme_df, weir_data_clean) {
   
   # ---- Combine Flow----
   
-      # # Force MonthDay to be character with expected format
-      # flow_all <- bind_rows(flow_df, flow_df_h) |>
-      #   mutate(
-      #     MonthDay = as.character(MonthDay),
-      #     trapped_date = make_trap_date(trap_year, MonthDay)
-      #   ) |>
-      #   filter(
-      #     !is.na(trapped_date),  # drop broken dates
-      #     between(trapped_date,
-      #             ymd(paste0(trap_year, "-05-30")),
-      #             ymd(paste0(trap_year, "-09-21")))
-      #   )
-  
   flow_all <- bind_rows(flow_df, flow_df_h) |>
     mutate(
       trapped_date = make_trap_date(MonthDay, trap.year)
@@ -265,23 +170,7 @@ prepare_megadf <- function(trap_year, grsme_df, weir_data_clean) {
         ymd(paste0(trap.year, "-09-21"))
       )
     )
-  
-  
-  # ---- Catch: Current Year ----
-  
-      # lrw_catch <- grsme_df |>
-      #   filter(
-      #     species == "Chinook",
-      #     recap == FALSE,
-      #     trap_year == trap_year,
-      #     age_designation == "Adult"
-      #   ) |>
-      #   group_by(trapped_date, MonthDay, origin) |>
-      #   summarise(Catch = sum(count, na.rm = TRUE), .groups = "drop") |>
-      #   mutate(
-      #     MonthDay = as.character(MonthDay),  # Enforce character
-      #     facet = as.character(trap_year)
-      #   )
+
   
   lrw_catch <- grsme_df |>
     filter(
@@ -295,23 +184,6 @@ prepare_megadf <- function(trap_year, grsme_df, weir_data_clean) {
     mutate(facet = as.character(trap.year))
   
   # ---- Catch: Historic Mean ----
-  
-    # lrw_historic <- weir_data_clean |>
-    #   filter(
-    #     facility == "NPT GRSME Program",
-    #     species == "Chinook",
-    #     recap == FALSE,
-    #     !trap_year %in% c(1997:(trap_year - 6), trap_year),
-    #     age_designation == "Adult"
-    #   ) |>
-    #   group_by(MonthDay, origin) |>
-    #   summarise(AllCatch = sum(count, na.rm = TRUE), .groups = "drop") |>
-    #   mutate(
-    #     MonthDay = as.character(MonthDay),  # Ensure character
-    #     Catch = AllCatch / 5,
-    #     trapped_date = make_trap_date(trap_year, MonthDay),
-    #     facet = paste0(trap_year - 5, "-", trap_year - 1, " Average")
-    #   )
   
   lrw_historic <- weir_data_clean |>
     filter(
