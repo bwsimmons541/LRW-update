@@ -1,7 +1,20 @@
-.Rproj.user
+.Rproj.user 
 .Rhistory
 .RData
 .Ruserdata
-.pdf
-.html
-.log
+
+# Rendered output
+*.html
+.Rcache/
+_cache/
+.knit/
+
+# Logs (optional)
+# logs/
+
+# PDFs (optional)
+# *.pdf
+
+# CSVs: allow FINS data only (optional)
+# *.csv
+# !data/TrappingData_FINS_*.csv
