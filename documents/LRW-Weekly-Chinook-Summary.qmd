@@ -35,10 +35,6 @@ library(officer)
 
 
 # Source custom R scripts
-# source("../R/cdms_login.R")
-# source("../R/sumGRSMEdisp.R")  # FINS Disposition Summary
-# source("../R/sumGRSMEbrood.R") # Brood Collection Summary
-# source("../R/make_trap_date.R")
 source("../R/report_helpers.R")
 
 #---- Dates ----
