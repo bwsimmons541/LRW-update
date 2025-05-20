@@ -4,7 +4,7 @@
 get_fins_data <- function(
     start_date = "2020-05-01",
     end_date = Sys.Date(),
-    module = "Adult Weir",
+    module = "Trapping",
     facility = "NPT GRSME Program",
     apikey = Sys.getenv("FINS_API_KEY")
 ) {
