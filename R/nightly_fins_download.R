@@ -32,8 +32,13 @@ tryCatch({
   }
   
   # Build filename and save
-  file_name <- paste0("data/TrappingData_FINS_", format(Sys.Date(), "%Y%m%d"), ".csv")
+  file_name <- "data/TrappingData.csv"
   write_csv(fins_data, file = file_name)
+  
+  if (!file.exists(file_name)) {
+    log_message(paste("Expected CSV not found:", file_name), type = "ERROR")
+    stop("FINS CSV file was not created.")
+  }
   
   log_message(paste("Successfully saved file:", file_name))
   

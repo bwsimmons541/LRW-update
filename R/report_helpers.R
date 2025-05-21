@@ -115,7 +115,7 @@ calculate_dispositions <- function(data, trap_year) {
 prepare_megadf <- function(trap_year, grsme_df, weir_data_clean) {
  
   # ---- Flow Data: Current Year ----
-  start_date <- paste0(trap.year, "-05-30") #changed trap_year to trap.year
+  start_date <- paste0(trap.year, "-05-15") #changed trap_year to trap.year
   end_date <- paste0(trap.year, "-09-30") #changed trap_year to trap.year
   
   req_url <- paste0(
@@ -134,7 +134,7 @@ prepare_megadf <- function(trap_year, grsme_df, weir_data_clean) {
     select(MonthDay, MeanDailyFlow = mean_daily_flow_cfs, facet)
   
   # ---- Flow Data: Historic (5-year average) ----
-  start_date_h <- paste0(trap.year - 5, "-05-30") #changed trap_year to trap.year
+  start_date_h <- paste0(trap.year - 5, "-05-15") #changed trap_year to trap.year
   end_date_h <- paste0(trap.year - 1, "-09-21") #changed trap_year to trap.year
   
   req_url2 <- paste0(
@@ -166,7 +166,7 @@ prepare_megadf <- function(trap_year, grsme_df, weir_data_clean) {
     filter( # This filter is klling this section when imported from helpers.
       between(
         trapped_date,
-        ymd(paste0(trap.year, "-05-30")),
+        ymd(paste0(trap.year, "-05-15")),
         ymd(paste0(trap.year, "-09-21"))
       )
     )

@@ -1,20 +1,27 @@
-.Rproj.user 
+# ────────────────────────────────────────────────
+# RStudio project/user/session files (ignore local clutter)
+# ────────────────────────────────────────────────
+.Rproj.user
 .Rhistory
 .RData
 .Ruserdata
 
-# Rendered output
-*.html
-.Rcache/
-_cache/
-.knit/
+# ────────────────────────────────────────────────
+# Rendered output (Quarto, R Markdown, etc.)
+# ────────────────────────────────────────────────
+*.html         # Ignore rendered HTML reports
+.Rcache/       # RMarkdown/knitr cache (local execution)
+_cache/        # Quarto render cache
+.knit/         # knitr internal folder
 
-# Logs (optional)
-# logs/
+# ────────────────────────────────────────────────
+# CSV file control
+# Ignore all .csv files EXCEPT the one used for the report
+# ────────────────────────────────────────────────
+*.csv
+!data/TrappingData.csv
 
-# PDFs (optional)
-# *.pdf
-
-# CSVs: allow FINS data only (optional)
-# *.csv
-# !data/TrappingData_FINS_*.csv
+# ────────────────────────────────────────────────
+# Logs, temp, or build folders (add here if needed)
+# logs/        # Uncomment to ignore logs folder
+# ────────────────────────────────────────────────
