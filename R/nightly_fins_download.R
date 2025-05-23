@@ -49,12 +49,13 @@ tryCatch({
   end_date <- format(Sys.Date(), "%m/%d/%Y")
   
   log_message(paste("Requesting ALL historical trapping data through", end_date, "for NPT GRSME Program only"))
+  # log_message(paste("Requesting ALL historical trapping data through", end_date, "for entire domain"))
   
   fins_data <- get_fins_data(
     start_date = NULL,  # NULL = get all historical data
     end_date = end_date,
     module = "Trapping",
-    scope = NULL,  # NULL = only your facility (NPT GRSME Program)
+    scope = NULL,  # NULL = only your facility (NPT GRSME Program), "domain" = all facilities in domain
     use_post = FALSE  # Use GET method for simplicity
   )
   
