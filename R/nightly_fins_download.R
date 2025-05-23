@@ -45,17 +45,16 @@ tryCatch({
   current_pt <- format(current_utc, tz = "America/Los_Angeles", "%Y-%m-%d %H:%M:%S")
   log_message(paste("Current PT time:", current_pt))
   
-  # Download data - get recent data (last 30 days by default)
-  start_date <- format(Sys.Date() - 30, "%m/%d/%Y")
+  # Download data - get ALL historical data for NPT GRSME Program only
   end_date <- format(Sys.Date(), "%m/%d/%Y")
   
-  log_message(paste("Requesting data from", start_date, "to", end_date))
+  log_message(paste("Requesting ALL historical trapping data through", end_date, "for NPT GRSME Program only"))
   
   fins_data <- get_fins_data(
-    start_date = start_date,
+    start_date = NULL,  # NULL = get all historical data
     end_date = end_date,
     module = "Trapping",
-    scope = "domain",
+    scope = NULL,  # NULL = only your facility (NPT GRSME Program)
     use_post = FALSE  # Use GET method for simplicity
   )
   
@@ -82,18 +81,27 @@ tryCatch({
   file_info <- file.info(file_name)
   log_message(paste("Successfully saved file:", file_name, "- Size:", file_info$size, "bytes"))
   
+  
   # Add summary info
   if (nrow(fins_data) > 0) {
     log_message("Data summary:")
-    if ("TrapDate" %in% names(fins_data)) {
-      date_range <- range(fins_data$TrapDate, na.rm = TRUE)
+    date_col <- NULL
+    if ("Trapped Date" %in% names(fins_data)) {
+      date_col <- "Trapped Date"
+    } else if ("TrapDate" %in% names(fins_data)) {
+      date_col <- "TrapDate"
+    }
+    
+    if (!is.null(date_col)) {
+      date_range <- range(fins_data[[date_col]], na.rm = TRUE)
       log_message(paste("  Date range:", paste(date_range, collapse = " to ")))
     }
     log_message(paste("  Total records:", nrow(fins_data)))
   }
   
-  log_message("Download completed successfully")
-  
+
+log_message("Download completed successfully")
+
 }, error = function(e) {
   error_msg <- conditionMessage(e)
   log_message(paste("Download failed:", error_msg), type = "ERROR")

@@ -1,10 +1,10 @@
 # get_fins_data.R - Fixed version for FINS API
 
 get_fins_data <- function(
-    start_date = format(Sys.Date() - 7, "%m/%d/%Y"),  # Default to last 7 days
+    start_date = NULL,  # NULL = get all historical data
     end_date = format(Sys.Date(), "%m/%d/%Y"),
     module = "Trapping",
-    scope = "domain",  # Use "domain" for all facilities in your domain
+    scope = NULL,  # NULL = only your facility (NPT GRSME Program), Use "domain" for all facilities in your domain. 
     apikey = Sys.getenv("FINS_API_KEY"),
     use_post = FALSE  # Set to TRUE if you want to use POST method
 ) {
@@ -42,10 +42,16 @@ get_fins_data <- function(
   # Build query parameters
   query_params <- list(
     apikey = apikey,
-    startDate = start_date,
-    endDate = end_date,
-    scope = scope
+    endDate = end_date
   )
+  
+  # Add optional parameters only if provided
+  if (!is.null(start_date)) {
+    query_params$startDate = start_date
+  }
+  if (!is.null(scope)) {
+    query_params$scope = scope
+  }
   
   # Make the API call
   if (use_post) {
