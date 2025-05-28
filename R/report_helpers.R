@@ -6,16 +6,15 @@ library(lubridate)
 library(tidyr)
 library(ggplot2)
 library(flextable)
-# library(cdmsR)
+library(cdmsR)
 library(cuyem) 
 
 # ---- CDMS login ----
+source("../R/cdms_login.R")
 
 # ---- Source GRSME functions ----
 source("../R/sumGRSMEdisp.R")  # FINS Disposition Summary
 source("../R/sumGRSMEbrood.R") # Brood Collection Summary
-# source("./R/cdms_login.R")
-
 
 # ---- Load Yearly Estimates ----
 load_yearly_estimates <- function(year, path = "../data/yearly_estimates.csv") {
@@ -45,32 +44,28 @@ get_trap_data <- function(download_cdms = TRUE, trap_year = NULL) {
     grsme_df <- AdultWeirData_clean
     
   } else {
-    # Load existing data
-    load(file = "../data/AdultWeirData.rda")
+    # Import FINS data
+    fins_data <- read_csv("../data/TrappingData.csv", show_col_types = FALSE)
     
-    # Clean historic weir data
-    AdultWeirData_clean <- clean_weirData(AdultWeirData) |>
+    save(fins_data, file = "../data/fins_data.rda")
+    
+    # Clean weir data
+    AdultWeirData_clean <- clean_weirData(fins_data) |>
       mutate(
         MonthDay = format(as.Date(trapped_date), "%m/%d"),
         count = as.double(count)
       )
     
-    # Load current data directly from FINS trapping XLSX
-    grsme_df <- readxl::read_xlsx("../data/TrappingData.xlsx")
-    
-    grsme_df <- clean_weirData(grsme_df) |>
-      mutate(
-        MonthDay = format(as.Date(trapped_date), "%m/%d"),
-        count = as.double(count)
-      )
-      
+    # Assign to grsme_df
+    grsme_df <- AdultWeirData_clean
   }
   
+  # Apply year filter if specified (works for both branches)
   if (!is.null(trap_year)) {
     grsme_df <- grsme_df |> filter(trap_year == !!trap_year)
   }
   
-  # ✅ Return both cleaned datasets in a named list
+  # Return both cleaned datasets in a named list
   list(
     AdultWeirData_clean = AdultWeirData_clean,
     grsme_df = grsme_df
@@ -347,4 +342,58 @@ prepare_caption_plot <- function(trap_year) {
     "(cubic feet per second) and daily captures of hatchery- and natural-origin adult Chinook salmon ",
     "at the Lostine River Weir. Discharge recorded at USGS station 1333000 located upstream of the town of Lostine."
   )
+}
+
+# ---- Function to safely create flextable or show no-data message ----
+safe_flextable <- function(data, trap_year, table_type = "hatchery") {
+  
+  # Check if data exists and has rows
+  if (is.null(data) || nrow(data) == 0) {
+    
+    # Create appropriate no-data message based on table type
+    if (table_type == "hatchery") {
+      message <- paste0("There is currently no data available for the capture of hatchery-origin Chinook for ", trap_year, ".")
+    } else if (table_type == "natural") {
+      message <- paste0("There is currently no data available for the capture of natural-origin Chinook for ", trap_year, ".")
+    } else if (table_type == "broodstock") {
+      message <- paste0("There is currently no broodstock collection data available for ", trap_year, ".")
+    } else {
+      message <- paste0("There is currently no data available for ", trap_year, ".")
+    }
+    
+    # Return a simple flextable with the message
+    no_data_df <- data.frame(Message = message)
+    return(
+      flextable(no_data_df) |>
+        delete_part(part = "header") |>
+        align(align = "center", part = "all") |>
+        fontsize(size = 11, part = "all") |>
+        italic(part = "all") |>
+        set_table_properties(layout = "autofit", width = 0.95)
+    )
+    
+  } else {
+    # Data exists, create normal flextable
+    if (table_type == "hatchery" || table_type == "natural") {
+      return(
+        flextable(
+          data,
+          cwidth = c(1.3, 0.7, 0.7, 0.7, 1.2, 1.2)
+        ) |>
+          align(j = 2:6, align = "right", part = "all") |>
+          hline(i = nrow(data) - 1) |>
+          set_table_properties(layout = "autofit", width = 0.95)
+      )
+    } else if (table_type == "broodstock") {
+      return(
+        flextable(
+          data,
+          cwidth = c(1, 1.5, 1.5, 1.2)
+        ) |>
+          align(j = 2:4, align = "right", part = "all") |>
+          hline(i = nrow(data) - 1) |>
+          set_table_properties(layout = "autofit", width = 0.95)
+      )
+    }
+  }
 }

@@ -17,7 +17,8 @@ format:
 editor: visual
 
 params:
-  trap_year: 2024
+  trap_year: !expr as.numeric(format(Sys.Date(), "%Y"))
+  # trap_year: 2024
 ---
 
 ```{r}
@@ -89,13 +90,7 @@ ss_brood       <- estimates$ss_brood
 #| include: false
 #| echo: false
 
-# Load full historical data for use in historic catch comparison
-# AdultWeirData <- load_weir_data("../data/AdultWeirData.rda")
-# AdultWeirData_clean <- clean_weir_data(AdultWeirData)
-# 
-# GRSME_df <- get_grsme_df(trap_year = trap.year, grsme_data = "fins")
-
-data_list <- get_trap_data(download_cdms = FALSE, trap_year = 2024)
+data_list <- get_trap_data(download_cdms = FALSE, trap_year = trap.year)
 
 AdultWeirData_clean <- data_list$AdultWeirData_clean
 grsme_df <- data_list$grsme_df
@@ -140,15 +135,6 @@ lrw_megaplot <- generate_lrw_megaplot(
   output_path = "../LRW_megaplot.jpg"# equivalent to original `lrw_catch`
 )
 
-# ggsave(
-#   filename = "LRW_megaplot.jpg",
-#   plot = lrw_megaplot,
-#   device = "jpeg",
-#   width = 10,
-#   height = 7,
-#   units = "in"
-# )
-
 # ---- Display Plot ----
 
 lrw_megaplot
@@ -190,13 +176,15 @@ include_graphics(path = "../www/npt_joseph.png")
 #| echo: false
 #| warning: false
 
-flextable(
-  h_df,
-  cwidth = c(1.3, 0.7, 0.7, 0.7, 1.2, 1.2)
-) %>%
-  align(j = 2:6, align = "right", part = "all") %>%
-  hline(i = nrow(h_df) - 1) %>%
-  set_table_properties(layout = "autofit", width = 0.95)
+# flextable(
+#   h_df,
+#   cwidth = c(1.3, 0.7, 0.7, 0.7, 1.2, 1.2)
+# ) %>%
+#   align(j = 2:6, align = "right", part = "all") %>%
+#   hline(i = nrow(h_df) - 1) %>%
+#   set_table_properties(layout = "autofit", width = 0.95)
+
+safe_flextable(h_df, trap.year, "hatchery")
 
 ```
 
@@ -209,13 +197,15 @@ flextable(
 #| echo: false
 #| warning: false
 
-flextable(
-  n_df,
-  cwidth = c(1.3, 0.7, 0.7, 0.7, 1.2, 1.2)
-) |>
-  align(j = 2:6, align = "right", part = "all") |>
-  hline(i = nrow(n_df) - 1) |>
-  set_table_properties(layout = "autofit", width = 0.95)
+# flextable(
+#   n_df,
+#   cwidth = c(1.3, 0.7, 0.7, 0.7, 1.2, 1.2)
+# ) |>
+#   align(j = 2:6, align = "right", part = "all") |>
+#   hline(i = nrow(n_df) - 1) |>
+#   set_table_properties(layout = "autofit", width = 0.95)
+
+safe_flextable(n_df, trap.year, "natural")
 
 ```
 
@@ -226,13 +216,15 @@ flextable(
 #| echo: false
 #| warning: false
 
-flextable(
-  table_3,
-  cwidth = c(1, 1.5, 1.5, 1.2)
-) |>
-  align(j = 2:4, align = "right", part = "all") |>
-  hline(i = nrow(table_3) - 1) |>
-  set_table_properties(layout = "autofit", width = 0.95)
+# flextable(
+#   table_3,
+#   cwidth = c(1, 1.5, 1.5, 1.2)
+# ) |>
+#   align(j = 2:4, align = "right", part = "all") |>
+#   hline(i = nrow(table_3) - 1) |>
+#   set_table_properties(layout = "autofit", width = 0.95)
+
+safe_flextable(table_3, trap.year, "broodstock")
 
 ```
 
