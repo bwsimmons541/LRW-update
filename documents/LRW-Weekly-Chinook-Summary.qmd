@@ -14,11 +14,47 @@ format:
     number-sections: false
     toc: false
     cap-location: top
+  html:
+    toc: false
+    number-sections: false
+    embed-resources: false #changed from true to false
+    theme: default
+    css: |
+      .landscape-plot {
+        text-align: center;
+        margin: 2em 0;
+        page-break-inside: avoid;
+      }
+      .landscape-plot img {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px;
+      }
+      @media print {
+        .landscape-plot {
+          transform: rotate(90deg);
+          transform-origin: center;
+          width: 100vh;
+          height: 100vw;
+          margin: 50vh auto;
+        }
+      }
+      iframe {
+        max-width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      /* Hide elements within iframe if possible */
+      iframe[src*="noaa.gov"] {
+        height: 500px;
+        overflow: hidden;
+      }
 editor: visual
 
 params:
   trap_year: !expr as.numeric(format(Sys.Date(), "%Y"))
-  # trap_year: 2024
 ---
 
 ```{r}
@@ -228,6 +264,29 @@ safe_flextable(table_3, trap.year, "broodstock")
 
 ```
 
+<!-- \blandscape -->
+
+<!-- \begin{center} -->
+
+<!-- \begin{minipage}{0.95\linewidth} -->
+
+<!-- \centering -->
+
+<!-- \includegraphics[width=\linewidth]{../LRW_megaplot.jpg} -->
+
+<!-- \vspace{3mm} -->
+
+<!-- \textit{`r prepare_caption_plot(trap.year)`} -->
+
+<!-- \end{minipage} -->
+
+<!-- \end{center} -->
+
+<!-- \elandscape -->
+
+### Lostine River Weir Current and Historic Catch and River Flows
+
+::: {.content-visible when-format="pdf"}
 \blandscape
 
 \begin{center}
@@ -244,6 +303,40 @@ safe_flextable(table_3, trap.year, "broodstock")
 \end{center}
 
 \elandscape
+:::
+
+:::: {.content-visible when-format="html"}
+::: landscape-plot
+![](../LRW_megaplot.jpg){width="100%"}
+
+*`r prepare_caption_plot(trap.year)`*
+:::
+::::
+
+<!-- ::: {.content-visible when-format="html"} -->
+<!-- ### Current River Conditions & Forecast -->
+
+<!-- <iframe src="https://water.noaa.gov/gauges/lsto3" width="100%" height="600" frameborder="0" style="border: 1px solid #ddd; border-radius: 4px;"> -->
+
+<!-- </iframe> -->
+
+<!-- *Real-time data from NOAA Gauge: Lostine River Above Lostine* -->
+<!-- ::: -->
+
+::: {.content-visible when-format="html"}
+### Current River Conditions - Lostine River Above Lostine
+
+<iframe src="https://water.noaa.gov/gauges/lsto3/graph" 
+        width="100%" 
+        height="500" 
+        frameborder="0" 
+        scrolling="no"
+        style="border: 1px solid #ddd; border-radius: 4px;">
+</iframe>
+
+*Real-time data from NOAA Gauge LSTO3 - [Full Details](https://water.noaa.gov/gauges/lsto3)*
+:::
+
 
 \newpage
 

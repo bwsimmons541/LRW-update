@@ -348,8 +348,51 @@ prepare_caption_plot <- function(trap_year) {
 safe_flextable <- function(data, trap_year, table_type = "hatchery") {
   
   # Check if data exists and has rows
-  if (is.null(data) || nrow(data) == 0) {
+  is_empty_data <- is.null(data) || nrow(data) == 0
+  
+  # If we have data, check if it's meaningful (not all zeros)
+  if (!is_empty_data && nrow(data) > 0) {
     
+    # For disposition tables, check if all numeric data is zeros
+    if (table_type %in% c("hatchery", "natural")) {
+      # Look for columns that should contain counts (columns 2-6 based on your table structure)
+      count_cols <- data[, 2:ncol(data), drop = FALSE]
+      
+      # Extract just the numbers from each cell (in case they're formatted like "0 (0)")
+      numeric_values <- c()
+      for (i in 1:nrow(count_cols)) {
+        for (j in 1:ncol(count_cols)) {
+          cell_value <- as.character(count_cols[i, j])
+          # Extract all numbers from the cell (handles "0 (0)" format)
+          numbers <- as.numeric(unlist(regmatches(cell_value, gregexpr("\\d+", cell_value))))
+          numeric_values <- c(numeric_values, numbers)
+        }
+      }
+      
+      # Remove NAs and check if all remaining values are zero
+      numeric_values <- numeric_values[!is.na(numeric_values)]
+      is_all_zeros <- length(numeric_values) > 0 && all(numeric_values == 0)
+      is_empty_data <- is_all_zeros
+    }
+    
+    # For broodstock table, check if it's just empty/placeholder data
+    if (table_type == "broodstock") {
+      # Check if all cells are empty, NA, or contain only zeros
+      all_cells <- unlist(data)
+      non_empty_cells <- all_cells[!is.na(all_cells) & all_cells != "" & all_cells != " "]
+      
+      # Extract numbers from non-empty cells
+      numeric_values <- c()
+      for (cell in non_empty_cells) {
+        numbers <- as.numeric(unlist(regmatches(as.character(cell), gregexpr("\\d+", as.character(cell)))))
+        numeric_values <- c(numeric_values, numbers[!is.na(numbers)])
+      }
+      
+      is_empty_data <- length(numeric_values) == 0 || all(numeric_values == 0)
+    }
+  }
+  
+  if (is_empty_data) {
     # Create appropriate no-data message based on table type
     if (table_type == "hatchery") {
       message <- paste0("There is currently no data available for the capture of hatchery-origin Chinook for ", trap_year, ".")
@@ -371,7 +414,6 @@ safe_flextable <- function(data, trap_year, table_type = "hatchery") {
         italic(part = "all") |>
         set_table_properties(layout = "autofit", width = 0.95)
     )
-    
   } else {
     # Data exists, create normal flextable
     if (table_type == "hatchery" || table_type == "natural") {
