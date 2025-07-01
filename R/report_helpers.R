@@ -18,8 +18,10 @@ source("../R/sumGRSMEbrood.R") # Brood Collection Summary
 
 # ---- Load Yearly Estimates ----
 load_yearly_estimates <- function(year, path = "../data/yearly_estimates.csv") {
-  read_csv(path) %>%
+  read_csv(path, show_col_types = FALSE) %>%
     filter(year == !!year) %>%
+    mutate(estimate_date = mdy(estimate_date)) %>%
+    filter(estimate_date == max(estimate_date, na.rm = TRUE)) %>%
     slice(1)
 }
 

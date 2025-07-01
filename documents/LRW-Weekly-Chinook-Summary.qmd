@@ -111,6 +111,7 @@ trap.year <-  params$trap_year
 
 estimates <- load_yearly_estimates(trap.year)
 
+estimate_type  <- estimates$estimate_type
 estimate_date  <- estimates$estimate_date
 nat_adults     <- estimates$nat_adults
 hat_adults     <- estimates$hat_adults
@@ -200,7 +201,7 @@ include_graphics(path = "../www/npt_joseph.png")
 
 ### Disposition Summary
 
--   In-season adult return-to-tributary estimates were updated on `r estimate_date` to `r nat_adults` natural-origin and `r hat_adults` hatchery-origin adults.
+-   `r estimate_type` adult return-to-tributary estimates were updated on `r estimate_date` to `r nat_adults` natural-origin and `r hat_adults` hatchery-origin adults.
 -   Brood stock collection goals are `r n_brood_goal` natural-origin adults, `r h_brood_goal` hatchery-origin adults, and `r hj_brood_goal` hatchery-origin jacks.
 -   Composition of adults passed upstream: `r h_upstream_calc`% Hatchery (Sliding scale goal $\leq$ `r ss_upstream`)
 -   Composition of adults kept for brood: `r n_brood_calc`% Natural (Sliding scale goal $\geq$ `r ss_brood`)
