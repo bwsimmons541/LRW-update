@@ -314,6 +314,7 @@ safe_flextable(table_3, trap.year, "broodstock")
 ::::
 
 <!-- ::: {.content-visible when-format="html"} -->
+
 <!-- ### Current River Conditions & Forecast -->
 
 <!-- <iframe src="https://water.noaa.gov/gauges/lsto3" width="100%" height="600" frameborder="0" style="border: 1px solid #ddd; border-radius: 4px;"> -->
@@ -321,22 +322,18 @@ safe_flextable(table_3, trap.year, "broodstock")
 <!-- </iframe> -->
 
 <!-- *Real-time data from NOAA Gauge: Lostine River Above Lostine* -->
+
 <!-- ::: -->
 
 ::: {.content-visible when-format="html"}
 ### Current River Conditions - Lostine River Above Lostine
 
-<iframe src="https://water.noaa.gov/gauges/lsto3/graph" 
-        width="100%" 
-        height="500" 
-        frameborder="0" 
-        scrolling="no"
-        style="border: 1px solid #ddd; border-radius: 4px;">
+<iframe src="https://water.noaa.gov/gauges/lsto3/graph" width="100%" height="500" frameborder="0" scrolling="no" style="border: 1px solid #ddd; border-radius: 4px;">
+
 </iframe>
 
 *Real-time data from NOAA Gauge LSTO3 - [Full Details](https://water.noaa.gov/gauges/lsto3)*
 :::
-
 
 \newpage
 
@@ -361,7 +358,6 @@ Craft, N (ODFW)\\
 Deal, D (ODFW)\\
 Dittmer, J (ODFW)\\
 Engle, R (FWS)\\
-Farnam, B (NOAA)\\
 Feldhaus, J (ODFW)\\
 Garza, Gabriel (ODFW)\\  
 Gee, S (ODFW)\\
@@ -371,10 +367,10 @@ Hagenah, P (Landowner)\\
 Harbeck, J (NPT)\\
 Harrod, R (ODFW)\\ 
 Hesse, J (NPT)\\
+Humphreys, J (TU)\\
 \end{minipage}
 \hfill
 \begin{minipage}[t]{0.48\textwidth}
-Humphreys, J (TU)\\
 Johnson, B (NPT)\\
 Johnson, D (NPT)\\
 Kozlowski, C (ODFW)\\
