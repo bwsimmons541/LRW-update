@@ -381,6 +381,7 @@ Maxwell, A (TU)\\
 McLean, M (CTUIR)\\
 Nisbitt, K (Wallowa CTY)\\
 Oatman, J (NPT)\\
+Raisch, A (NOAA) \\
 Rumelhart, R (NPT)\\
 Treadway, E (ODFW)\\
 Smith, J (ODFW)\\
