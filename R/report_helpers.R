@@ -6,7 +6,7 @@ library(lubridate)
 library(tidyr)
 library(ggplot2)
 library(flextable)
-library(cdmsR)
+# library(cdmsR)
 library(cuyem)
 library(stringr)
 
@@ -44,7 +44,7 @@ load_yearly_estimates <- function(year, path = NULL) {
 
 
 # ---- Load and Clean Weir Data from CDMS or .rda and TrappingData.xlsx ----
-get_trap_data <- function(trap_year = NULL) {
+get_trap_data <- function(trap.year = NULL) { #changed from trap_year
   
   # Determine correct paths based on working directory
   if (basename(getwd()) == "documents") {
@@ -76,8 +76,8 @@ get_trap_data <- function(trap_year = NULL) {
     )
   
   # Apply year filter if specified
-  if (!is.null(trap_year)) {
-    grsme_df <- AdultWeirData_clean |> filter(trap_year == !!trap_year)
+  if (!is.null(trap.year)) {
+    grsme_df <- AdultWeirData_clean |> filter(trap.year == !!trap.year)
   } else {
     grsme_df <- AdultWeirData_clean
   }

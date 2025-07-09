@@ -1,4 +1,4 @@
-# app.R - Non-reactive version for current year only
+# app.R
 
 library(shiny)
 library(shinydashboard)
@@ -14,21 +14,28 @@ library(lubridate)
 # Source your helper functions
 source("R/report_helpers.R")
 
-# Set current year (no user selection)
-current_year <- as.numeric(format(Sys.Date(), "%Y"))
+# Preload available years
+available_years <- read_csv("data/yearly_estimates.csv")$year |> 
+  unique() |> 
+  sort(decreasing = TRUE)
 
 # Define UI
 ui <- dashboardPage(
   dashboardHeader(title = "Lostine River Weir - Chinook Summary"),
   
   dashboardSidebar(
-    h4(paste("Current Year:", current_year), style = "color: white; text-align: center; margin: 20px 0;"),
-
+    selectInput("year", "Select Trap Year:", 
+                choices = available_years, 
+                selected = max(available_years)),
+    br(),
+    downloadButton("download_pdf", "Download PDF Report", 
+                   class = "btn-primary"),
     br(), br(),
-    div(style = "margin: 20px 10px;",
-        p("Last Data Update:", style = "font-size: 12px; color: gray; margin-bottom: 5px;"),
-        textOutput("last_update", inline = TRUE)
-    )
+    downloadButton("download_html", "Download HTML Report", 
+                   class = "btn-info"),
+    br(), br(),
+    p("Last Data Update:", style = "font-size: 12px; color: gray;"),
+    textOutput("last_update")
   ),
   
   dashboardBody(
@@ -52,10 +59,6 @@ ui <- dashboardPage(
           border: 1px solid #dee2e6;
           border-radius: 5px;
           margin: 10px 0;
-        }
-        #last_update {
-          font-size: 12px;
-          color: white;
         }
       "))
     ),
@@ -137,28 +140,52 @@ ui <- dashboardPage(
 # Define Server
 server <- function(input, output, session) {
   
-  # Load all data at startup (non-reactive)
-  estimates_data <- load_yearly_estimates(current_year)
+  # Reactive values
+  selected_year <- reactive({ as.integer(input$year) })
   
-  trap_data <- get_trap_data(trap.year = current_year)
-  grsme_df <- trap_data$grsme_df
+  # Load data reactively
+  estimates_data <- reactive({
+    load_yearly_estimates(selected_year())
+  })
   
-  # Calculate dispositions and extract components
-  dispositions_result <- calculate_dispositions(grsme_df, current_year)
-  h_df <- dispositions_result$h_df
-  n_df <- dispositions_result$n_df
-  h_upstream_calc <- dispositions_result$h_upstream_calc
-  n_brood_calc <- dispositions_result$n_brood_calc
+  trap_data <- reactive({
+    # Use simplified function - only reads from FINS CSV
+    get_trap_data(trap.year = selected_year())
+  })
   
-  # Prepare plot data
-  mega_data <- prepare_megadf(
-    trap.year = current_year,
-    grsme_df = grsme_df,
-    weir_data_clean = trap_data$AdultWeirData_clean
-  )
+  grsme_df <- reactive({
+    trap_data()$grsme_df
+  })
   
-  # Calculate broodstock data
-  broodstock_data <- sumGRSMEbrood(data = grsme_df, trap.year = current_year)
+  dispositions <- reactive({
+    disp_result <- calculate_dispositions(grsme_df(), selected_year())
+    
+    # Extract individual components like in Quarto
+    h_df <- disp_result$h_df
+    n_df <- disp_result$n_df
+    h_upstream_calc <- disp_result$h_upstream_calc
+    n_brood_calc <- disp_result$n_brood_calc
+    
+    # Return the extracted components
+    list(
+      h_df = h_df,
+      n_df = n_df,
+      h_upstream_calc = h_upstream_calc,
+      n_brood_calc = n_brood_calc
+    )
+  })
+  
+  mega_data <- reactive({
+    prepare_megadf(
+      trap.year = selected_year(), # This function expects trap.year (with dot)
+      grsme_df = grsme_df(),
+      weir_data_clean = trap_data()$AdultWeirData_clean
+    )
+  })
+  
+  broodstock_data <- reactive({
+    sumGRSMEbrood(data = grsme_df(), trap.year = selected_year())
+  })
   
   # Last update time
   output$last_update <- renderText({
@@ -173,6 +200,7 @@ server <- function(input, output, session) {
   # Forecasts and Disposition Summary
   output$disposition_summary <- renderUI({
     estimates <- estimates_data
+    dispositions <- dispositions_data
     
     HTML(paste(
       "<ul>",
@@ -181,8 +209,8 @@ server <- function(input, output, session) {
              estimates$hat_adults, " hatchery-origin adults.</li>"),
       paste0("<li>Brood stock collection goals are ", estimates$n_brood_goal, " natural-origin adults, ", 
              estimates$h_brood_goal, " hatchery-origin adults, and ", estimates$hj_brood_goal, " hatchery-origin jacks.</li>"),
-      paste0("<li>Composition of adults passed upstream: ", h_upstream_calc, "% Hatchery (Sliding scale goal ≤ ", estimates$ss_upstream, ")</li>"),
-      paste0("<li>Composition of adults kept for brood: ", n_brood_calc, "% Natural (Sliding scale goal ≥ ", estimates$ss_brood, ")</li>"),
+      paste0("<li>Composition of adults passed upstream: ", dispositions$h_upstream_calc, "% Hatchery (Sliding scale goal ≤ ", estimates$ss_upstream, ")</li>"),
+      paste0("<li>Composition of adults kept for brood: ", dispositions$n_brood_calc, "% Natural (Sliding scale goal ≥ ", estimates$ss_brood, ")</li>"),
       "</ul>"
     ))
   })
@@ -230,24 +258,29 @@ server <- function(input, output, session) {
       formatStyle(columns = 1:ncol(data), textAlign = 'center')
   }
   
-  # Disposition Tables (non-reactive)
+  # Disposition Tables
   output$hatchery_table <- renderUI({
-    create_safe_table(h_df, "hatchery", current_year)
+    dispositions <- dispositions_data()
+    create_safe_table(dispositions$h_df, "hatchery", selected_year())
   })
   
   output$natural_table <- renderUI({
-    create_safe_table(n_df, "natural", current_year)
+    dispositions <- dispositions_data()
+    create_safe_table(dispositions$n_df, "natural", selected_year())
   })
   
   output$broodstock_table <- renderUI({
-    create_safe_table(broodstock_data, "broodstock", current_year)
+    brood_data <- broodstock_data()
+    create_safe_table(brood_data, "broodstock", selected_year())
   })
   
-  # Main plot (non-reactive)
+  # Main plot
   output$megaplot <- renderPlotly({
+    mega_list <- mega_data()
+    
     plot <- generate_lrw_megaplot(
-      megadf = mega_data$lrw_megadf,
-      lrw_catch = mega_data$lrw_megadf |> filter(facet == as.character(current_year)),
+      megadf = mega_list$lrw_megadf,
+      lrw_catch = mega_list$lrw_megadf |> filter(facet == as.character(selected_year())),
       save_plot = FALSE
     )
     
@@ -255,6 +288,48 @@ server <- function(input, output, session) {
       layout(showlegend = TRUE)
   })
   
+  # Download handlers
+  output$download_pdf <- downloadHandler(
+    filename = function() {
+      paste0("Lostine_Report_", selected_year, "_", Sys.Date(), ".pdf")
+    },
+    content = function(file) {
+      temp_qmd <- tempfile(fileext = ".qmd")
+      qmd_content <- readLines("documents/LRW-Weekly-Chinook-Summary.qmd")
+      qmd_content <- gsub(
+        "trap_year: !expr as\\.numeric\\(format\\(Sys\\.Date\\(\\), \"%Y\"\\)\\)",
+        paste0("trap_year: ", selected_year),
+        qmd_content
+      )
+      writeLines(qmd_content, temp_qmd)
+      quarto::quarto_render(
+        input = temp_qmd,
+        output_file = file,
+        output_format = "pdf"
+      )
+    }
+  )
+  
+  output$download_html <- downloadHandler(
+    filename = function() {
+      paste0("Lostine_Report_", selected_year, "_", Sys.Date(), ".html")
+    },
+    content = function(file) {
+      temp_qmd <- tempfile(fileext = ".qmd")
+      qmd_content <- readLines("documents/LRW-Weekly-Chinook-Summary.qmd")
+      qmd_content <- gsub(
+        "trap_year: !expr as\\.numeric\\(format\\(Sys\\.Date\\(\\), \"%Y\"\\)\\)",
+        paste0("trap_year: ", selected_year),
+        qmd_content
+      )
+      writeLines(qmd_content, temp_qmd)
+      quarto::quarto_render(
+        input = temp_qmd,
+        output_file = file,
+        output_format = "html"
+      )
+    }
+  )
 }
 
 # Run the app

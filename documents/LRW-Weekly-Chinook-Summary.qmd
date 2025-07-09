@@ -104,7 +104,7 @@ ss_brood       <- estimates$ss_brood
 #| include: false
 #| echo: false
 
-data_list <- get_trap_data(trap_year = trap.year)
+data_list <- get_trap_data(trap.year = trap.year)
 
 AdultWeirData_clean <- data_list$AdultWeirData_clean
 grsme_df <- data_list$grsme_df

@@ -33,7 +33,7 @@ jobs:
             dplyr
 
       - name: Run download script
-        run: Rscript R/nightly_fins_download.R
+        run: Rscript github_scripts/nightly_fins_download.R
       
       - name: Commit new data file
         run: |

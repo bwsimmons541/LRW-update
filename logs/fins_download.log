@@ -519,3 +519,5 @@
 [INFO] 2025-07-09 03:42:35 UTC (2025-07-08 20:42:35 PT) -   Date range: 10/10/2023 to 9/9/2022
 [INFO] 2025-07-09 03:42:35 UTC (2025-07-08 20:42:35 PT) -   Total records: 19948
 [INFO] 2025-07-09 03:42:35 UTC (2025-07-08 20:42:35 PT) - Download completed successfully
+[INFO] 2025-07-09 10:04:03 UTC (2025-07-09 10:04:03 PT) - Starting nightly FINS data download
+[ERROR] 2025-07-09 10:04:03 UTC (2025-07-09 10:04:03 PT) - Download failed: FINS_API_KEY environment variable not set

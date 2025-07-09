@@ -8,7 +8,7 @@ library(readr)
 library(dplyr)
 
 # ---- Source API Function ----
-source("R/get_fins_data.R")
+source("github_scripts/get_fins_data.R")
 
 # ---- Log Utility Function ----
 log_message <- function(msg, type = "INFO") {
