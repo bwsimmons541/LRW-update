@@ -78,36 +78,13 @@ source("../R/report_helpers.R")
 summary_date <- format(Sys.time(), "%B %d, %Y")
 trap.year <-  params$trap_year
 
-#---- Set values ----
-# Data source selection
-# download_FINS_CDMS <- FALSE  # TRUE = fetch new data from CDMS; FALSE = use cached .rda
-# grsme_data <- "fins"         # Options: 'fins'
-
-# # File listing
-# files <- list.files(path = "../data/")
 ```
 
 ```{r}
 #| label: load-yearly-estimates
 #| include: false
 
-# # Load yearly forecast estimates, brood collection targets and sliding scale from CSV
-# yearly_estimates <- read_csv("../data/yearly_estimates.csv")
-# 
-# # Filter the row matching the current trap year
-# selected_estimates <- yearly_estimates |>
-#   filter(year == trap.year) |>
-#   slice(1)
-# 
-# # Assign the values to variables used throughout the report
-# estimate_date  <- selected_estimates$estimate_date
-# nat_adults     <- selected_estimates$nat_adults
-# hat_adults     <- selected_estimates$hat_adults
-# n_brood_goal   <- selected_estimates$n_brood_goal
-# h_brood_goal   <- selected_estimates$h_brood_goal
-# hj_brood_goal  <- selected_estimates$hj_brood_goal
-# ss_upstream    <- selected_estimates$ss_upstream
-# ss_brood       <- selected_estimates$ss_brood
+# # Load yearly forecast estimates, brood collection targets and sliding scale
 
 estimates <- load_yearly_estimates(trap.year)
 
@@ -127,7 +104,7 @@ ss_brood       <- estimates$ss_brood
 #| include: false
 #| echo: false
 
-data_list <- get_trap_data(download_cdms = FALSE, trap_year = trap.year)
+data_list <- get_trap_data(trap_year = trap.year)
 
 AdultWeirData_clean <- data_list$AdultWeirData_clean
 grsme_df <- data_list$grsme_df
@@ -152,7 +129,7 @@ n_brood_calc <- dispositions$n_brood_calc
 #| include: false
 
   mega_list <- prepare_megadf(
-                  trap_year = trap.year,
+                  trap.year,
                   grsme_df = grsme_df,
                   weir_data_clean = AdultWeirData_clean
                 )
@@ -168,8 +145,8 @@ n_brood_calc <- dispositions$n_brood_calc
 lrw_megaplot <- generate_lrw_megaplot(
   megadf = lrw_megadf,
   lrw_catch = lrw_megadf |> filter(facet == as.character(trap.year)),
-  save_plot = TRUE,
-  output_path = "../LRW_megaplot.jpg"# equivalent to original `lrw_catch`
+  save_plot = TRUE
+  # output_path will automatically be "../LRW_megaplot.jpg"
 )
 
 # ---- Display Plot ----
@@ -314,26 +291,16 @@ safe_flextable(table_3, trap.year, "broodstock")
 :::
 ::::
 
-<!-- ::: {.content-visible when-format="html"} -->
-
-<!-- ### Current River Conditions & Forecast -->
-
-<!-- <iframe src="https://water.noaa.gov/gauges/lsto3" width="100%" height="600" frameborder="0" style="border: 1px solid #ddd; border-radius: 4px;"> -->
-
-<!-- </iframe> -->
-
-<!-- *Real-time data from NOAA Gauge: Lostine River Above Lostine* -->
-
-<!-- ::: -->
+<!-- Original -->
 
 ::: {.content-visible when-format="html"}
 ### Current River Conditions - Lostine River Above Lostine
 
-<iframe src="https://water.noaa.gov/gauges/lsto3/graph" width="100%" height="500" frameborder="0" scrolling="no" style="border: 1px solid #ddd; border-radius: 4px;">
+**🌊 [View Live NOAA Gauge Data & Forecast](https://water.noaa.gov/gauges/lsto3)**
 
-</iframe>
+Current gauge shows both observed flow data and official 7-day forecasts for the Lostine River above Lostine (NWSLI: LSTO3).
 
-*Real-time data from NOAA Gauge LSTO3 - [Full Details](https://water.noaa.gov/gauges/lsto3)*
+*Click above for interactive graphs, current readings, and flood predictions*
 :::
 
 \newpage

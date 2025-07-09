@@ -7,17 +7,34 @@ library(tidyr)
 library(ggplot2)
 library(flextable)
 library(cdmsR)
-library(cuyem) 
+library(cuyem)
+library(stringr)
 
-# ---- CDMS login ----
-source("../R/cdms_login.R")
 
-# ---- Source GRSME functions ----
-source("../R/sumGRSMEdisp.R")  # FINS Disposition Summary
-source("../R/sumGRSMEbrood.R") # Brood Collection Summary
+# ---- Dynamic Source GRSME functions ----
+# Determine correct paths based on working directory
+if (basename(getwd()) == "documents") {
+  # Running from documents/ folder (Quarto)
+  source("../R/sumGRSMEdisp.R")  # FINS Disposition Summary
+  source("../R/sumGRSMEbrood.R") # Brood Collection Summary
+} else {
+  # Running from root directory (Shiny app)
+  source("R/sumGRSMEdisp.R")     # FINS Disposition Summary
+  source("R/sumGRSMEbrood.R")    # Brood Collection Summary
+}
 
 # ---- Load Yearly Estimates ----
-load_yearly_estimates <- function(year, path = "../data/yearly_estimates.csv") {
+load_yearly_estimates <- function(year, path = NULL) {
+  
+  # Determine correct path based on working directory if not specified
+  if (is.null(path)) {
+    if (basename(getwd()) == "documents") {
+      path <- "../data/yearly_estimates.csv"
+    } else {
+      path <- "data/yearly_estimates.csv"
+    }
+  }
+  
   read_csv(path, show_col_types = FALSE) %>%
     filter(year == !!year) %>%
     mutate(estimate_date = mdy(estimate_date)) %>%
@@ -27,44 +44,42 @@ load_yearly_estimates <- function(year, path = "../data/yearly_estimates.csv") {
 
 
 # ---- Load and Clean Weir Data from CDMS or .rda and TrappingData.xlsx ----
-get_trap_data <- function(download_cdms = TRUE, trap_year = NULL) {
-  if (download_cdms) { # == TRUE
-    # Download new data
-    AdultWeirData <- get_WeirData(Facility = "NPT GRSME Program")
-    
-    # Save to disk for reuse
-    save(AdultWeirData, file = "../data/AdultWeirData.rda")
-    
-    # Clean weir data
-    AdultWeirData_clean <- clean_weirData(AdultWeirData) |>
-      mutate(
-        MonthDay = format(as.Date(trapped_date), "%m/%d"),
-        count = as.double(count)
-      )
-    
-    # Assign to GRSME_df (potentially redundant filter)
-    grsme_df <- AdultWeirData_clean
-    
+get_trap_data <- function(trap_year = NULL) {
+  
+  # Determine correct paths based on working directory
+  if (basename(getwd()) == "documents") {
+    # Running from documents/ folder (Quarto)
+    trapping_data_path <- "../data/TrappingData.csv"
+    save_path_fins <- "../data/fins_data.rda"
   } else {
-    # Import FINS data
-    fins_data <- read_csv("../data/TrappingData.csv", show_col_types = FALSE)
-    
-    save(fins_data, file = "../data/fins_data.rda")
-    
-    # Clean weir data
-    AdultWeirData_clean <- clean_weirData(fins_data) |>
-      mutate(
-        MonthDay = format(as.Date(trapped_date), "%m/%d"),
-        count = as.double(count)
-      )
-    
-    # Assign to grsme_df
-    grsme_df <- AdultWeirData_clean
+    # Running from root directory (Shiny app)
+    trapping_data_path <- "data/TrappingData.csv"
+    save_path_fins <- "data/fins_data.rda"
   }
   
-  # Apply year filter if specified (works for both branches)
+  # Check if file exists
+  if (!file.exists(trapping_data_path)) {
+    stop("TrappingData.csv not found. Make sure the nightly download has run successfully.")
+  }
+  
+  # Import FINS data
+  fins_data <- read_csv(trapping_data_path, show_col_types = FALSE)
+  
+  # Optional: Save backup copy
+  save(fins_data, file = save_path_fins)
+  
+  # Clean weir data
+  AdultWeirData_clean <- clean_weirData(fins_data) |>
+    mutate(
+      MonthDay = format(as.Date(trapped_date), "%m/%d"),
+      count = as.double(count)
+    )
+  
+  # Apply year filter if specified
   if (!is.null(trap_year)) {
-    grsme_df <- grsme_df |> filter(trap_year == !!trap_year)
+    grsme_df <- AdultWeirData_clean |> filter(trap_year == !!trap_year)
+  } else {
+    grsme_df <- AdultWeirData_clean
   }
   
   # Return both cleaned datasets in a named list
@@ -109,7 +124,7 @@ calculate_dispositions <- function(data, trap_year) {
 
 # ---- Plot Data Prep Function Prepare Mega DF ----
 
-prepare_megadf <- function(trap_year, grsme_df, weir_data_clean) {
+prepare_megadf <- function(trap.year, grsme_df, weir_data_clean) {
  
   # ---- Flow Data: Current Year ----
   start_date <- paste0(trap.year, "-05-15") #changed trap_year to trap.year
@@ -223,10 +238,23 @@ prepare_megadf <- function(trap_year, grsme_df, weir_data_clean) {
 
 # ---- Generate Plot ----
 
+# ---- Generate Plot ----
 generate_lrw_megaplot <- function(megadf,
                                   lrw_catch,
                                   save_plot = FALSE,
-                                  output_path = "../LRW_megaplot.jpg") {
+                                  output_path = NULL) {
+  
+  # Determine correct output path based on working directory if not specified
+  if (is.null(output_path)) {
+    if (basename(getwd()) == "documents") {
+      # Running from documents/ folder (Quarto)
+      output_path <- "../LRW_megaplot.jpg"
+    } else {
+      # Running from root directory (Shiny app)
+      output_path <- "LRW_megaplot.jpg"
+    }
+  }
+  
   # ---- Compute Y-Axis Max ---
   plot_max_df <- lrw_catch |>
     group_by(trapped_date) |>
@@ -311,7 +339,6 @@ generate_lrw_megaplot <- function(megadf,
   
   # ---- Return Plot Object ---
   return(p)
-  
 }
 
 # ---- Prepare Captions ----
