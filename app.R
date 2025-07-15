@@ -17,22 +17,56 @@ source("R/report_helpers.R")
 # Set current year (no user selection)
 current_year <- as.numeric(format(Sys.Date(), "%Y"))
 
-# Define UI
+# Enhanced UI section for app.R
+
 ui <- dashboardPage(
   dashboardHeader(title = "Lostine River Weir - Chinook Summary"),
   
   dashboardSidebar(
     h4(paste("Current Year:", current_year), style = "color: white; text-align: center; margin: 20px 0;"),
-
+    
     br(), br(),
     div(style = "margin: 20px 10px;",
         p("Last Data Update:", style = "font-size: 12px; color: gray; margin-bottom: 5px;"),
         textOutput("last_update", inline = TRUE)
-    )
-  ),
+    ),
   
+  br(), br(),
+  
+  # Contact Information Section
+  div(style = "margin: 20px 10px; padding: 15px; background-color: rgba(255,255,255,0.1); border-radius: 5px;",
+      h5("Contact Information", style = "color: white; text-align: center; margin-bottom: 15px; font-weight: bold;"),
+      
+      div(style = "color: white; font-size: 11px; line-height: 1.4; margin-bottom: 15px;",
+          p(strong("Neal Espinosa"), style = "margin: 0; font-size: 12px;"),
+          p("Northeast Oregon Natural and Hatchery Salmonid Monitoring", style = "margin: 2px 0;"),
+          p("Biologist II", style = "margin: 2px 0;"),
+          p("541-432-2517", style = "margin: 2px 0;"),
+          p(a("neale@nezperce.org", href = "mailto:neale@nezperce.org", 
+              style = "color: #87CEEB; text-decoration: none;"), style = "margin: 2px 0;")
+      ),
+      
+      div(style = "color: white; font-size: 11px; line-height: 1.4; margin-bottom: 15px;",
+          p(strong("Brian Simmons"), style = "margin: 0; font-size: 12px;"),
+          p("Northeast Oregon Natural and Hatchery Salmonid Monitoring", style = "margin: 2px 0;"),
+          p("Project Leader", style = "margin: 2px 0;"),
+          p("541-432-2515", style = "margin: 2px 0;"),
+          p(a("brians@nezperce.org", href = "mailto:brians@nezperce.org", 
+              style = "color: #87CEEB; text-decoration: none;"), style = "margin: 2px 0;")
+      ),
+      
+      div(style = "color: white; font-size: 11px; line-height: 1.4; text-align: center; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px;",
+          p(strong("Nez Perce Tribe"), style = "margin: 2px 0; font-size: 12px;"),
+          p("Joseph Field Office", style = "margin: 2px 0;"),
+          p("500 North Main Street", style = "margin: 2px 0;"),
+          p("P.O. Box 909", style = "margin: 2px 0;"),
+          p("Joseph, OR 97846", style = "margin: 2px 0;")
+      )
+  )
+),
+
   dashboardBody(
-    # Custom CSS to match your report styling
+    # Enhanced CSS to match PDF styling
     tags$head(
       tags$style(HTML("
         .main-header .navbar {
@@ -57,76 +91,158 @@ ui <- dashboardPage(
           font-size: 12px;
           color: white;
         }
+        .npt-header {
+          background-color: white;
+          padding: 20px;
+          margin-bottom: 20px;
+          border-radius: 5px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .npt-logo-side {
+          max-height: 80px;
+          width: auto;
+          margin: 0 15px;
+        }
+        .header-title {
+          color: #2c3e50;
+          font-weight: bold;
+          margin: 0;
+          text-align: center;
+        }
+        .header-subtitle {
+          color: #34495e;
+          margin: 5px 0 0 0;
+          text-align: center;
+          font-style: italic;
+        }
+        .disposition-box .box-header {
+          background-color: #3498db;
+          color: white;
+        }
+        .table-box .box-header {
+          background-color: #5bc0de;
+          color: white;
+        }
+        .plot-box .box-header {
+          background-color: #5cb85c;
+          color: white;
+        }
+        .river-box .box-header {
+          background-color: #f0ad4e;
+          color: white;
+        }
+        /* Make disposition summary text more readable */
+        .disposition-summary ul {
+          font-size: 14px;
+          line-height: 1.6;
+        }
+        .disposition-summary li {
+          margin-bottom: 8px;
+        }
       "))
     ),
     
     fluidRow(
-      # Header with NPT logo (if available)
+      # Enhanced Header with dual NPT logos
       column(12,
-             box(width = 12, status = "primary",
-                 div(style = "text-align: center;",
-                     h1("Lostine River Weir"),
-                     h3(paste("Weekly Chinook Summary:", format(Sys.Date(), "%B %d, %Y")))
+             div(class = "npt-header",
+                 div(style = "display: flex; align-items: center; justify-content: space-between;",
+                     # Left logo - Treaty
+                     div(style = "flex: 0 0 auto;",
+                         img(src = "npt_treaty_logo.png", class = "npt-logo-side", 
+                             alt = "Nez Perce Tribe")
+                     ),
+                     # Center titles
+                     div(style = "flex: 1; text-align: center;",
+                         h1("Lostine River Weir", class = "header-title"),
+                         h3(paste("Weekly Chinook Summary:", format(Sys.Date(), "%B %d, %Y")), 
+                            class = "header-subtitle")
+                     ),
+                     # Right logo - Fisheries
+                     div(style = "flex: 0 0 auto;",
+                         img(src = "npt_fisheries_logo.png", class = "npt-logo-side", 
+                             alt = "Nez Perce Tribe Fisheries")
+                     )
                  )
              )
       )
     ),
     
     fluidRow(
-      # Disposition Summary
+      # Enhanced Disposition Summary
       column(12,
-             box(width = 12, title = "Forecasts and Disposition Summary", status = "primary", solidHeader = TRUE,
-                 htmlOutput("disposition_summary")
+             div(class = "disposition-box",
+                 box(width = 12, title = "Forecasts and Disposition Summary", 
+                     status = "primary", solidHeader = TRUE,
+                     div(class = "disposition-summary",
+                         htmlOutput("disposition_summary")
+                     )
+                 )
              )
       )
     ),
     
     fluidRow(
-      # Tables
+      # Enhanced Tables
       column(6,
-             box(width = 12, title = "Hatchery Chinook Disposition", status = "info", solidHeader = TRUE,
-                 htmlOutput("hatchery_table")
+             div(class = "table-box",
+                 box(width = 12, title = "Hatchery Chinook Disposition", 
+                     status = "info", solidHeader = TRUE,
+                     htmlOutput("hatchery_table")
+                 )
              )
       ),
       column(6,
-             box(width = 12, title = "Natural Chinook Disposition", status = "info", solidHeader = TRUE,
-                 htmlOutput("natural_table")
+             div(class = "table-box",
+                 box(width = 12, title = "Natural Chinook Disposition", 
+                     status = "info", solidHeader = TRUE,
+                     htmlOutput("natural_table")
+                 )
              )
       )
     ),
     
     fluidRow(
-      # Broodstock table
+      # Enhanced Broodstock table
       column(12,
-             box(width = 12, title = "Broodstock Collection Summary", status = "info", solidHeader = TRUE,
-                 htmlOutput("broodstock_table")
+             div(class = "table-box",
+                 box(width = 12, title = "Broodstock Collection Summary", 
+                     status = "info", solidHeader = TRUE,
+                     htmlOutput("broodstock_table")
+                 )
              )
       )
     ),
     
     fluidRow(
-      # Main plot
+      # Enhanced Main plot
       column(12,
-             box(width = 12, title = "Current and Historic Catch and River Flows", status = "success", solidHeader = TRUE,
-                 plotlyOutput("megaplot", height = "600px")
+             div(class = "plot-box",
+                 box(width = 12, title = "Current and Historic Catch and River Flows", 
+                     status = "success", solidHeader = TRUE,
+                     plotlyOutput("megaplot", height = "600px")
+                 )
              )
       )
     ),
     
     fluidRow(
-      # NOAA link section
+      # Enhanced NOAA link section
       column(12,
-             box(width = 12, title = "Current River Conditions", status = "warning", solidHeader = TRUE,
-                 div(style = "text-align: center; padding: 20px;",
-                     h4("🌊 Real-Time River Data"),
-                     p("Current gauge shows both observed flow data and official 7-day forecasts for the Lostine River above Lostine (NWSLI: LSTO3)."),
-                     br(),
-                     actionButton("noaa_link", "View Live NOAA Gauge Data & Forecast", 
-                                  onclick = "window.open('https://water.noaa.gov/gauges/lsto3', '_blank')",
-                                  class = "btn-primary btn-lg"),
-                     br(), br(),
-                     p("Click above for interactive graphs, current readings, and flood predictions", 
-                       style = "font-style: italic; color: gray;")
+             div(class = "river-box",
+                 box(width = 12, title = "Current River Conditions", 
+                     status = "warning", solidHeader = TRUE,
+                     div(style = "text-align: center; padding: 20px;",
+                         h4("🌊 Real-Time River Data"),
+                         p("Current gauge shows both observed flow data and official 7-day forecasts for the Lostine River above Lostine (NWSLI: LSTO3)."),
+                         br(),
+                         actionButton("noaa_link", "View Live NOAA Gauge Data & Forecast", 
+                                      onclick = "window.open('https://water.noaa.gov/gauges/lsto3', '_blank')",
+                                      class = "btn-primary btn-lg"),
+                         br(), br(),
+                         p("Click above for interactive graphs, current readings, and flood predictions", 
+                           style = "font-style: italic; color: gray;")
+                     )
                  )
              )
       )
@@ -143,12 +259,21 @@ server <- function(input, output, session) {
   trap_data <- get_trap_data(trap.year = current_year)
   grsme_df <- trap_data$grsme_df
   
-  # Calculate dispositions and extract components
+  # Calculate dispositions and extract components (updated section in app.R server)
   dispositions_result <- calculate_dispositions(grsme_df, current_year)
   h_df <- dispositions_result$h_df
   n_df <- dispositions_result$n_df
   h_upstream_calc <- dispositions_result$h_upstream_calc
   n_brood_calc <- dispositions_result$n_brood_calc
+  
+  # Extract broodstock summary numbers (now including jacks)
+  n_brood_sum <- dispositions_result$n_brood_sum
+  h_brood_sum <- dispositions_result$h_brood_sum
+  hj_brood_sum <- dispositions_result$hj_brood_sum
+  total_brood_sum <- dispositions_result$total_brood_sum
+  
+  # Use broodstock data from dispositions result
+  broodstock_data <- dispositions_result$broodstock_data
   
   # Prepare plot data
   mega_data <- prepare_megadf(
@@ -156,9 +281,6 @@ server <- function(input, output, session) {
     grsme_df = grsme_df,
     weir_data_clean = trap_data$AdultWeirData_clean
   )
-  
-  # Calculate broodstock data
-  broodstock_data <- sumGRSMEbrood(data = grsme_df, trap.year = current_year)
   
   # Last update time
   output$last_update <- renderText({
@@ -170,22 +292,32 @@ server <- function(input, output, session) {
     }
   })
   
-  # Forecasts and Disposition Summary
+  # Forecasts and Disposition Summary (updated with jacks)
   output$disposition_summary <- renderUI({
     estimates <- estimates_data
+    
+    # Calculate total broodstock goal
+    total_brood_goal <- estimates$n_brood_goal + estimates$h_brood_goal + estimates$hj_brood_goal
     
     HTML(paste(
       "<ul>",
       paste0("<li>", estimates$estimate_type, " adult return-to-tributary estimates were updated on ", 
              estimates$estimate_date, " to ", estimates$nat_adults, " natural-origin and ", 
              estimates$hat_adults, " hatchery-origin adults.</li>"),
-      paste0("<li>Brood stock collection goals are ", estimates$n_brood_goal, " natural-origin adults, ", 
-             estimates$h_brood_goal, " hatchery-origin adults, and ", estimates$hj_brood_goal, " hatchery-origin jacks.</li>"),
+      paste0("<li>Brood stock collection goals: ", total_brood_goal, " total (", 
+             estimates$n_brood_goal, " natural-origin adults, ", 
+             estimates$h_brood_goal, " hatchery-origin adults, ", 
+             estimates$hj_brood_goal, " hatchery-origin jacks).</li>"),
+      paste0("<li><strong>Brood stock collected to date: ", total_brood_sum, " of ", total_brood_goal, 
+             " total (", n_brood_sum, " natural-origin, ", 
+             h_brood_sum, " hatchery-origin adults, ", 
+             hj_brood_sum, " hatchery-origin jacks).</strong></li>"),
       paste0("<li>Composition of adults passed upstream: ", h_upstream_calc, "% Hatchery (Sliding scale goal ≤ ", estimates$ss_upstream, ")</li>"),
       paste0("<li>Composition of adults kept for brood: ", n_brood_calc, "% Natural (Sliding scale goal ≥ ", estimates$ss_brood, ")</li>"),
       "</ul>"
     ))
   })
+  
   
   # Helper function to create safe HTML tables
   create_safe_table <- function(data, table_type, trap_year) {

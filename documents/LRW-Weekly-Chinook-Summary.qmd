@@ -122,6 +122,16 @@ h_df <- dispositions$h_df
 n_df <- dispositions$n_df
 h_upstream_calc <- dispositions$h_upstream_calc
 n_brood_calc <- dispositions$n_brood_calc
+
+# Extract broodstock summary numbers (now including jacks)
+n_brood_sum <- dispositions$n_brood_sum
+h_brood_sum <- dispositions$h_brood_sum
+hj_brood_sum <- dispositions$hj_brood_sum
+total_brood_sum <- dispositions$total_brood_sum
+
+# Calculate total broodstock goal for summary
+total_brood_goal <- n_brood_goal + h_brood_goal + hj_brood_goal
+
 ```
 
 ```{r}
@@ -146,7 +156,6 @@ lrw_megaplot <- generate_lrw_megaplot(
   megadf = lrw_megadf,
   lrw_catch = lrw_megadf |> filter(facet == as.character(trap.year)),
   save_plot = TRUE
-  # output_path will automatically be "../LRW_megaplot.jpg"
 )
 
 # ---- Display Plot ----
@@ -179,7 +188,8 @@ include_graphics(path = "../www/npt_joseph.png")
 ### Disposition Summary
 
 -   `r estimate_type` adult return-to-tributary estimates were updated on `r estimate_date` to `r nat_adults` natural-origin and `r hat_adults` hatchery-origin adults.
--   Brood stock collection goals are `r n_brood_goal` natural-origin adults, `r h_brood_goal` hatchery-origin adults, and `r hj_brood_goal` hatchery-origin jacks.
+-   Brood stock collection goals: `r total_brood_goal` total (`r n_brood_goal` natural-origin adults, `r h_brood_goal` hatchery-origin adults, `r hj_brood_goal` hatchery-origin jacks).
+-   **Brood stock collected to date: `r total_brood_sum` of `r total_brood_goal` total (`r n_brood_sum` natural-origin adults, `r h_brood_sum` hatchery-origin adults, `r hj_brood_sum` hatchery-origin jacks).**
 -   Composition of adults passed upstream: `r h_upstream_calc`% Hatchery (Sliding scale goal $\leq$ `r ss_upstream`)
 -   Composition of adults kept for brood: `r n_brood_calc`% Natural (Sliding scale goal $\geq$ `r ss_brood`)
 
@@ -189,14 +199,6 @@ include_graphics(path = "../www/npt_joseph.png")
 #| label: table1-hatchery-dispositions
 #| echo: false
 #| warning: false
-
-# flextable(
-#   h_df,
-#   cwidth = c(1.3, 0.7, 0.7, 0.7, 1.2, 1.2)
-# ) %>%
-#   align(j = 2:6, align = "right", part = "all") %>%
-#   hline(i = nrow(h_df) - 1) %>%
-#   set_table_properties(layout = "autofit", width = 0.95)
 
 safe_flextable(h_df, trap.year, "hatchery")
 
@@ -211,14 +213,6 @@ safe_flextable(h_df, trap.year, "hatchery")
 #| echo: false
 #| warning: false
 
-# flextable(
-#   n_df,
-#   cwidth = c(1.3, 0.7, 0.7, 0.7, 1.2, 1.2)
-# ) |>
-#   align(j = 2:6, align = "right", part = "all") |>
-#   hline(i = nrow(n_df) - 1) |>
-#   set_table_properties(layout = "autofit", width = 0.95)
-
 safe_flextable(n_df, trap.year, "natural")
 
 ```
@@ -230,37 +224,9 @@ safe_flextable(n_df, trap.year, "natural")
 #| echo: false
 #| warning: false
 
-# flextable(
-#   table_3,
-#   cwidth = c(1, 1.5, 1.5, 1.2)
-# ) |>
-#   align(j = 2:4, align = "right", part = "all") |>
-#   hline(i = nrow(table_3) - 1) |>
-#   set_table_properties(layout = "autofit", width = 0.95)
-
 safe_flextable(table_3, trap.year, "broodstock")
 
 ```
-
-<!-- \blandscape -->
-
-<!-- \begin{center} -->
-
-<!-- \begin{minipage}{0.95\linewidth} -->
-
-<!-- \centering -->
-
-<!-- \includegraphics[width=\linewidth]{../LRW_megaplot.jpg} -->
-
-<!-- \vspace{3mm} -->
-
-<!-- \textit{`r prepare_caption_plot(trap.year)`} -->
-
-<!-- \end{minipage} -->
-
-<!-- \end{center} -->
-
-<!-- \elandscape -->
 
 ### Lostine River Weir Current and Historic Catch and River Flows
 
@@ -374,8 +340,8 @@ Zollman, R (NPT)\\
 
 \begin{center}
 {\large Neal Espinosa}\\
-Northeast Oregon Chinook Evaluations\\
-Biologist I\\
+Northeast Oregon Natural and Hatchery Salmonid Monitoring\\
+Biologist II\\
 541-432-2517\\
 \texttt{neale@nezperce.org}
 \end{center}
@@ -383,7 +349,7 @@ Biologist I\\
 
 \begin{center}
 {\large Brian Simmons}\\
-Northeast Oregon Chinook Evaluations\\
+Northeast Oregon Natural and Hatchery Salmonid Monitoring\\
 Project Leader\\
 541-432-2515\\
 \texttt{brians@nezperce.org}\\[4mm]

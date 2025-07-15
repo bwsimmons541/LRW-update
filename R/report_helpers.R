@@ -10,7 +10,6 @@ library(flextable)
 library(cuyem)
 library(stringr)
 
-
 # ---- Dynamic Source GRSME functions ----
 # Determine correct paths based on working directory
 if (basename(getwd()) == "documents") {
@@ -50,11 +49,9 @@ get_trap_data <- function(trap.year = NULL) { #changed from trap_year
   if (basename(getwd()) == "documents") {
     # Running from documents/ folder (Quarto)
     trapping_data_path <- "../data/TrappingData.csv"
-    save_path_fins <- "../data/fins_data.rda"
   } else {
     # Running from root directory (Shiny app)
     trapping_data_path <- "data/TrappingData.csv"
-    save_path_fins <- "data/fins_data.rda"
   }
   
   # Check if file exists
@@ -64,10 +61,7 @@ get_trap_data <- function(trap.year = NULL) { #changed from trap_year
   
   # Import FINS data
   fins_data <- read_csv(trapping_data_path, show_col_types = FALSE)
-  
-  # Optional: Save backup copy
-  save(fins_data, file = save_path_fins)
-  
+
   # Clean weir data
   AdultWeirData_clean <- clean_weirData(fins_data) |>
     mutate(
@@ -95,7 +89,85 @@ make_trap_date <- function(month_day, year) {
   ymd(paste(year, month_day, sep = "-"))
 }
 
+#---- Extract Broodstock Summary Numbers (Updated with Jacks) ----
+extract_broodstock_summary <- function(broodstock_data) {
+  
+  # Check if data exists and has a "Total" row
+  if (is.null(broodstock_data) || nrow(broodstock_data) == 0) {
+    return(list(
+      n_brood_sum = 0,
+      h_brood_sum = 0,
+      hj_brood_sum = 0,
+      total_brood_sum = 0
+    ))
+  }
+  
+  # Find the "Total" row
+  total_row <- broodstock_data %>%
+    filter(str_detect(`Week Start`, "Total"))
+  
+  if (nrow(total_row) == 0) {
+    return(list(
+      n_brood_sum = 0,
+      h_brood_sum = 0,
+      hj_brood_sum = 0,
+      total_brood_sum = 0
+    ))
+  }
+  
+  # Extract numbers from the parentheses in each column
+  # Format is typically "captures (broodstock)"
+  
+  # Natural Chinook - extract number in parentheses
+  nat_text <- total_row$`Natural Chinook`[1]
+  n_brood_sum <- as.numeric(str_extract(nat_text, "(?<=\\()\\d+(?=\\))"))
+  if (is.na(n_brood_sum)) n_brood_sum <- 0
+  
+  # Hatchery Chinook - extract number in parentheses  
+  hat_text <- total_row$`Hatchery Chinook`[1]
+  h_brood_sum <- as.numeric(str_extract(hat_text, "(?<=\\()\\d+(?=\\))"))
+  if (is.na(h_brood_sum)) h_brood_sum <- 0
+  
+  # For jacks, we need to get them from the original data since sumGRSMEbrood 
+  # only shows adults in the summary table. We'll need to calculate separately.
+  # This requires access to the original data, so we'll modify the function signature
+  
+  # For now, set to 0 - we'll handle this in the updated calculate_dispositions
+  hj_brood_sum <- 0
+  
+  # Calculate total (adults only for now)
+  total_brood_sum <- n_brood_sum + h_brood_sum + hj_brood_sum
+  
+  return(list(
+    n_brood_sum = n_brood_sum,
+    h_brood_sum = h_brood_sum,
+    hj_brood_sum = hj_brood_sum,
+    total_brood_sum = total_brood_sum
+  ))
+}
 
+# We need a separate function to get jack broodstock counts
+extract_jack_broodstock <- function(data, trap_year) {
+  
+  # Filter for hatchery jacks collected for broodstock
+  jack_brood <- data %>%
+    filter(
+      trap_year == !!trap_year,
+      species == "Chinook",
+      origin == "Hatchery",
+      age_designation %in% c('Jack/Jill', 'Mini-Jack'),
+      moved_to == "Lookingglass Fish Hatchery Inbox"
+    ) %>%
+    summarise(hj_brood_sum = sum(count, na.rm = TRUE)) %>%
+    pull(hj_brood_sum)
+  
+  # Return 0 if no data
+  if (length(jack_brood) == 0 || is.na(jack_brood)) {
+    return(0)
+  }
+  
+  return(jack_brood)
+}
 
 #---- Calculate Dispositions ----
 
@@ -103,21 +175,37 @@ calculate_dispositions <- function(data, trap_year) {
   # Summary tables
   h_df <- sumGRSMEdisp(data = data, origin_ = "Hatchery", trap.year = trap_year)
   n_df <- sumGRSMEdisp(data = data, origin_ = "Natural", trap.year = trap_year)
-
-  # Extract counts
+  
+  # Extract counts for upstream composition
   hat_up <- as.numeric(stringr::str_extract(h_df[[1, 5]], "^\\d+"))
   nat_up <- as.numeric(stringr::str_extract(n_df[[1, 5]], "^\\d+"))
   h_upstream_calc <- round((hat_up / (hat_up + nat_up)) * 100, 0)
-
+  
+  # Extract counts for brood composition  
   hat_bs <- as.numeric(stringr::str_extract(h_df[[2, 5]], "^\\d+"))
   nat_bs <- as.numeric(stringr::str_extract(n_df[[2, 5]], "^\\d+"))
   n_brood_calc <- round((nat_bs / (hat_bs + nat_bs)) * 100, 0)
-
+  
+  # Generate broodstock data and extract summary
+  broodstock_data <- sumGRSMEbrood(data = data, trap.year = trap_year)
+  broodstock_summary <- extract_broodstock_summary(broodstock_data)
+  
+  # Get jack broodstock count separately
+  hj_brood_sum <- extract_jack_broodstock(data, trap_year)
+  
+  # Calculate total including jacks
+  total_brood_sum <- broodstock_summary$n_brood_sum + broodstock_summary$h_brood_sum + hj_brood_sum
+  
   list(
     h_df = h_df,
     n_df = n_df,
     h_upstream_calc = h_upstream_calc,
-    n_brood_calc = n_brood_calc
+    n_brood_calc = n_brood_calc,
+    broodstock_data = broodstock_data,
+    n_brood_sum = broodstock_summary$n_brood_sum,
+    h_brood_sum = broodstock_summary$h_brood_sum,
+    hj_brood_sum = hj_brood_sum,
+    total_brood_sum = total_brood_sum
   )
 }
 
@@ -232,11 +320,6 @@ prepare_megadf <- function(trap.year, grsme_df, weir_data_clean) {
   list(lrw_megadf = lrw_megadf, 
        lrw_catch = lrw_catch)
 }
-
-
-
-
-# ---- Generate Plot ----
 
 # ---- Generate Plot ----
 generate_lrw_megaplot <- function(megadf,
