@@ -25,3 +25,6 @@ _cache/        # Quarto render cache
 # Logs, temp, or build folders (add here if needed)
 # logs/        # Uncomment to ignore logs folder
 # ────────────────────────────────────────────────
+
+# Development tools (optional)
+diagnostics/

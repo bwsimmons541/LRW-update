@@ -99,7 +99,7 @@ ui <- dashboardPage(
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .npt-logo-side {
-          max-height: 80px;
+          max-height: 120px;
           width: auto;
           margin: 0 15px;
         }

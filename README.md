@@ -106,6 +106,14 @@ quarto render documents/LRW-Weekly-Chinook-Summary.qmd --to pdf
 - `sumGRSMEdisp()`: Disposition summary tables
 - `sumGRSMEbrood()`: Broodstock collection summaries
 
+## Data Validation
+
+Use `R/diagnostic_utilities.R` for troubleshooting data discrepancies:
+
+- `quick_consistency_check(data, year)` - Daily validation
+- `validate_data_consistency(data, year)` - Full investigation
+- Individual debug functions for specific calculations
+
 ## Maintenance
 
 ### Regular Tasks

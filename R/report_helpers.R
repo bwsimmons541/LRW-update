@@ -168,35 +168,27 @@ extract_jack_broodstock <- function(data, trap_year) {
   return(jack_brood)
 }
 
-#---- Calculate Adult Captures (Total Season) ----
-calculate_adult_captures <- function(data, trap_year) {
+#---- Calculate Adult Captures from Disposition Tables (>630mm, Consistent) ----
+calculate_adult_captures_from_disposition <- function(data, trap_year) {
   
-  # Filter for adult Chinook salmon captured this season (>630mm, excluding recaps)
-  adult_captures <- data %>%
-    filter(
-      trap_year == !!trap_year,
-      species == "Chinook",
-      age_designation == "Adult",  # This should correspond to >630mm
-      recap == FALSE  # Exclude recaptures
-    ) %>%
-    group_by(origin) %>%
-    summarise(adults_captured = sum(count, na.rm = TRUE), .groups = "drop")
+  # Generate the same disposition tables used elsewhere
+  h_df <- sumGRSMEdisp(data = data, origin_ = "Hatchery", trap.year = trap_year)
+  n_df <- sumGRSMEdisp(data = data, origin_ = "Natural", trap.year = trap_year)
   
-  # Extract counts by origin
-  n_adults <- adult_captures %>%
-    filter(origin == "Natural") %>%
-    pull(adults_captured)
+  # Extract the "Total [>630]" column from the "Total" row (excluding recaps - numbers in parentheses)
+  h_total_row <- h_df[nrow(h_df), "Total [>630]"]
+  n_total_row <- n_df[nrow(n_df), "Total [>630]"]
   
-  h_adults <- adult_captures %>%
-    filter(origin == "Hatchery") %>%
-    pull(adults_captured)
+  # Extract numbers in parentheses (these exclude recaptures)
+  h_adults <- as.numeric(str_extract(h_total_row, "(?<=\\()\\d+(?=\\))"))
+  n_adults <- as.numeric(str_extract(n_total_row, "(?<=\\()\\d+(?=\\))"))
   
-  # Handle cases where no data exists for either origin
-  if (length(n_adults) == 0) n_adults <- 0
-  if (length(h_adults) == 0) h_adults <- 0
+  # Handle cases where extraction fails
+  if (is.na(h_adults)) h_adults <- 0
+  if (is.na(n_adults)) n_adults <- 0
   
   # Calculate total
-  total_adults <- n_adults + h_adults
+  total_adults <- h_adults + n_adults
   
   return(list(
     n_adults = n_adults,
@@ -205,8 +197,8 @@ calculate_adult_captures <- function(data, trap_year) {
   ))
 }
 
+# UPDATE the calculate_dispositions() function call:
 #---- Calculate Dispositions ----
-
 calculate_dispositions <- function(data, trap_year) {
   # Summary tables
   h_df <- sumGRSMEdisp(data = data, origin_ = "Hatchery", trap.year = trap_year)
@@ -232,8 +224,8 @@ calculate_dispositions <- function(data, trap_year) {
   # Calculate total broodstock including jacks
   total_brood_sum <- broodstock_summary$n_brood_sum + broodstock_summary$h_brood_sum + hj_brood_sum
   
-  # Calculate total adult captures for the season
-  adult_captures <- calculate_adult_captures(data, trap_year)
+  # UPDATED: Calculate total adult captures using SAME logic as disposition tables
+  adult_captures <- calculate_adult_captures_from_disposition(data, trap_year)
   
   list(
     h_df = h_df,
@@ -245,7 +237,7 @@ calculate_dispositions <- function(data, trap_year) {
     h_brood_sum = broodstock_summary$h_brood_sum,
     hj_brood_sum = hj_brood_sum,
     total_brood_sum = total_brood_sum,
-    # Add adult capture totals
+    # Use disposition table logic for consistency
     n_adults = adult_captures$n_adults,
     h_adults = adult_captures$h_adults,
     total_adults = adult_captures$total_adults
