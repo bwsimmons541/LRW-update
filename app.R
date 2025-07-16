@@ -41,7 +41,7 @@ ui <- dashboardPage(
           p(strong("Neal Espinosa"), style = "margin: 0; font-size: 12px;"),
           p("Northeast Oregon Natural and Hatchery Salmonid Monitoring", style = "margin: 2px 0;"),
           p("Biologist II", style = "margin: 2px 0;"),
-          p("541-432-2517", style = "margin: 2px 0;"),
+          p("541-432-2502", style = "margin: 2px 0;"),
           p(a("neale@nezperce.org", href = "mailto:neale@nezperce.org", 
               style = "color: #87CEEB; text-decoration: none;"), style = "margin: 2px 0;")
       ),
