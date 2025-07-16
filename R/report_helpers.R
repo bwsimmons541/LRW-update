@@ -6,7 +6,6 @@ library(lubridate)
 library(tidyr)
 library(ggplot2)
 library(flextable)
-# library(cdmsR)
 library(cuyem)
 library(stringr)
 
@@ -146,7 +145,7 @@ extract_broodstock_summary <- function(broodstock_data) {
   ))
 }
 
-# We need a separate function to get jack broodstock counts
+#---- jack broodstock counts ----
 extract_jack_broodstock <- function(data, trap_year) {
   
   # Filter for hatchery jacks collected for broodstock
@@ -167,6 +166,43 @@ extract_jack_broodstock <- function(data, trap_year) {
   }
   
   return(jack_brood)
+}
+
+#---- Calculate Adult Captures (Total Season) ----
+calculate_adult_captures <- function(data, trap_year) {
+  
+  # Filter for adult Chinook salmon captured this season (>630mm, excluding recaps)
+  adult_captures <- data %>%
+    filter(
+      trap_year == !!trap_year,
+      species == "Chinook",
+      age_designation == "Adult",  # This should correspond to >630mm
+      recap == FALSE  # Exclude recaptures
+    ) %>%
+    group_by(origin) %>%
+    summarise(adults_captured = sum(count, na.rm = TRUE), .groups = "drop")
+  
+  # Extract counts by origin
+  n_adults <- adult_captures %>%
+    filter(origin == "Natural") %>%
+    pull(adults_captured)
+  
+  h_adults <- adult_captures %>%
+    filter(origin == "Hatchery") %>%
+    pull(adults_captured)
+  
+  # Handle cases where no data exists for either origin
+  if (length(n_adults) == 0) n_adults <- 0
+  if (length(h_adults) == 0) h_adults <- 0
+  
+  # Calculate total
+  total_adults <- n_adults + h_adults
+  
+  return(list(
+    n_adults = n_adults,
+    h_adults = h_adults,
+    total_adults = total_adults
+  ))
 }
 
 #---- Calculate Dispositions ----
@@ -193,8 +229,11 @@ calculate_dispositions <- function(data, trap_year) {
   # Get jack broodstock count separately
   hj_brood_sum <- extract_jack_broodstock(data, trap_year)
   
-  # Calculate total including jacks
+  # Calculate total broodstock including jacks
   total_brood_sum <- broodstock_summary$n_brood_sum + broodstock_summary$h_brood_sum + hj_brood_sum
+  
+  # Calculate total adult captures for the season
+  adult_captures <- calculate_adult_captures(data, trap_year)
   
   list(
     h_df = h_df,
@@ -205,10 +244,13 @@ calculate_dispositions <- function(data, trap_year) {
     n_brood_sum = broodstock_summary$n_brood_sum,
     h_brood_sum = broodstock_summary$h_brood_sum,
     hj_brood_sum = hj_brood_sum,
-    total_brood_sum = total_brood_sum
+    total_brood_sum = total_brood_sum,
+    # Add adult capture totals
+    n_adults = adult_captures$n_adults,
+    h_adults = adult_captures$h_adults,
+    total_adults = adult_captures$total_adults
   )
 }
-
 
 # ---- Plot Data Prep Function Prepare Mega DF ----
 

@@ -129,8 +129,30 @@ h_brood_sum <- dispositions$h_brood_sum
 hj_brood_sum <- dispositions$hj_brood_sum
 total_brood_sum <- dispositions$total_brood_sum
 
+# Extract adult capture totals
+n_adults <- dispositions$n_adults
+h_adults <- dispositions$h_adults
+total_adults <- dispositions$total_adults
+
 # Calculate total broodstock goal for summary
 total_brood_goal <- n_brood_goal + h_brood_goal + hj_brood_goal
+
+
+# dispositions <- calculate_dispositions(grsme_df, trap.year)
+# 
+# h_df <- dispositions$h_df
+# n_df <- dispositions$n_df
+# h_upstream_calc <- dispositions$h_upstream_calc
+# n_brood_calc <- dispositions$n_brood_calc
+# 
+# # Extract broodstock summary numbers (now including jacks)
+# n_brood_sum <- dispositions$n_brood_sum
+# h_brood_sum <- dispositions$h_brood_sum
+# hj_brood_sum <- dispositions$hj_brood_sum
+# total_brood_sum <- dispositions$total_brood_sum
+# 
+# # Calculate total broodstock goal for summary
+# total_brood_goal <- n_brood_goal + h_brood_goal + hj_brood_goal
 
 ```
 
@@ -185,9 +207,10 @@ include_graphics(path = "../www/npt_joseph.png")
 {\large Weekly Chinook Summary: \textit{`r summary_date`}}
 \end{center}
 
-### Disposition Summary
+### Forecasts, Goals, and Disposition Summary
 
 -   `r estimate_type` adult return-to-tributary estimates were updated on `r estimate_date` to `r nat_adults` natural-origin and `r hat_adults` hatchery-origin adults.
+-   **Adult summer Chinook Salmon trapped to date: `r total_adults` total (`r n_adults` natural-origin adults, `r h_adults` hatchery-origin adults).**
 -   Brood stock collection goals: `r total_brood_goal` total (`r n_brood_goal` natural-origin adults, `r h_brood_goal` hatchery-origin adults, `r hj_brood_goal` hatchery-origin jacks).
 -   **Brood stock collected to date: `r total_brood_sum` of `r total_brood_goal` total (`r n_brood_sum` natural-origin adults, `r h_brood_sum` hatchery-origin adults, `r hj_brood_sum` hatchery-origin jacks).**
 -   Composition of adults passed upstream: `r h_upstream_calc`% Hatchery (Sliding scale goal $\leq$ `r ss_upstream`)

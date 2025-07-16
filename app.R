@@ -172,7 +172,7 @@ ui <- dashboardPage(
       # Enhanced Disposition Summary
       column(12,
              div(class = "disposition-box",
-                 box(width = 12, title = "Forecasts and Disposition Summary", 
+                 box(width = 12, title = "Forecasts, Goals, and Disposition Summary", 
                      status = "primary", solidHeader = TRUE,
                      div(class = "disposition-summary",
                          htmlOutput("disposition_summary")
@@ -183,11 +183,15 @@ ui <- dashboardPage(
     ),
     
     fluidRow(
-      # Enhanced Tables
+      # Enhanced Tables with Always-Visible Captions
       column(6,
              div(class = "table-box",
                  box(width = 12, title = "Hatchery Chinook Disposition", 
                      status = "info", solidHeader = TRUE,
+                     # Add caption above table
+                     div(style = "margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #5bc0de; font-size: 12px; font-style: italic;",
+                         textOutput("caption_table1")
+                     ),
                      htmlOutput("hatchery_table")
                  )
              )
@@ -196,6 +200,10 @@ ui <- dashboardPage(
              div(class = "table-box",
                  box(width = 12, title = "Natural Chinook Disposition", 
                      status = "info", solidHeader = TRUE,
+                     # Add caption above table
+                     div(style = "margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #5bc0de; font-size: 12px; font-style: italic;",
+                         textOutput("caption_table2")
+                     ),
                      htmlOutput("natural_table")
                  )
              )
@@ -203,11 +211,15 @@ ui <- dashboardPage(
     ),
     
     fluidRow(
-      # Enhanced Broodstock table
+      # Enhanced Broodstock table with Caption
       column(12,
              div(class = "table-box",
                  box(width = 12, title = "Broodstock Collection Summary", 
                      status = "info", solidHeader = TRUE,
+                     # Add caption above table
+                     div(style = "margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #5bc0de; font-size: 12px; font-style: italic;",
+                         textOutput("caption_table3")
+                     ),
                      htmlOutput("broodstock_table")
                  )
              )
@@ -215,12 +227,16 @@ ui <- dashboardPage(
     ),
     
     fluidRow(
-      # Enhanced Main plot
+      # Enhanced Main plot with Caption
       column(12,
              div(class = "plot-box",
                  box(width = 12, title = "Current and Historic Catch and River Flows", 
                      status = "success", solidHeader = TRUE,
-                     plotlyOutput("megaplot", height = "600px")
+                     plotlyOutput("megaplot", height = "600px"),
+                     # Add caption below plot
+                     div(style = "margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #5cb85c; font-size: 12px; font-style: italic;",
+                         textOutput("caption_plot")
+                     )
                  )
              )
       )
@@ -272,6 +288,11 @@ server <- function(input, output, session) {
   hj_brood_sum <- dispositions_result$hj_brood_sum
   total_brood_sum <- dispositions_result$total_brood_sum
   
+  # Extract adult capture totals
+  n_adults <- dispositions_result$n_adults
+  h_adults <- dispositions_result$h_adults
+  total_adults <- dispositions_result$total_adults
+  
   # Use broodstock data from dispositions result
   broodstock_data <- dispositions_result$broodstock_data
   
@@ -292,7 +313,7 @@ server <- function(input, output, session) {
     }
   })
   
-  # Forecasts and Disposition Summary (updated with jacks)
+  # Forecasts, Goals, and Disposition Summary (updated with adult captures and jacks)
   output$disposition_summary <- renderUI({
     estimates <- estimates_data
     
@@ -304,12 +325,15 @@ server <- function(input, output, session) {
       paste0("<li>", estimates$estimate_type, " adult return-to-tributary estimates were updated on ", 
              estimates$estimate_date, " to ", estimates$nat_adults, " natural-origin and ", 
              estimates$hat_adults, " hatchery-origin adults.</li>"),
+      paste0("<li><strong>Adult summer Chinook Salmon trapped to date: ", total_adults, " total (", 
+             n_adults, " natural-origin adults, ", 
+             h_adults, " hatchery-origin adults).</strong></li>"),
       paste0("<li>Brood stock collection goals: ", total_brood_goal, " total (", 
              estimates$n_brood_goal, " natural-origin adults, ", 
              estimates$h_brood_goal, " hatchery-origin adults, ", 
              estimates$hj_brood_goal, " hatchery-origin jacks).</li>"),
       paste0("<li><strong>Brood stock collected to date: ", total_brood_sum, " of ", total_brood_goal, 
-             " total (", n_brood_sum, " natural-origin, ", 
+             " total (", n_brood_sum, " natural-origin adults, ", 
              h_brood_sum, " hatchery-origin adults, ", 
              hj_brood_sum, " hatchery-origin jacks).</strong></li>"),
       paste0("<li>Composition of adults passed upstream: ", h_upstream_calc, "% Hatchery (Sliding scale goal ≤ ", estimates$ss_upstream, ")</li>"),
@@ -318,6 +342,22 @@ server <- function(input, output, session) {
     ))
   })
   
+  # Caption outputs for tables and plot
+  output$caption_table1 <- renderText({
+    prepare_caption_table1(current_year)
+  })
+  
+  output$caption_table2 <- renderText({
+    prepare_caption_table2(current_year)
+  })
+  
+  output$caption_table3 <- renderText({
+    prepare_caption_table3(current_year)
+  })
+  
+  output$caption_plot <- renderText({
+    prepare_caption_plot(current_year)
+  })
   
   # Helper function to create safe HTML tables
   create_safe_table <- function(data, table_type, trap_year) {
