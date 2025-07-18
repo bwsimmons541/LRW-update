@@ -28,3 +28,9 @@ _cache/        # Quarto render cache
 
 # Development tools (optional)
 diagnostics/
+# GitHub token config
+github_config.R
+
+# Credentials and sensitive files
+.Renviron
+rsconnect/

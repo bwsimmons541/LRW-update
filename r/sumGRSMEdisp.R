@@ -37,7 +37,7 @@ sumGRSMEdisp <- function(data, origin_, trap.year) {
           disposition == 'Disposed' ~ 'Food Distribution'
         )) %>%
       group_by(Disposition, Class, origin) %>%
-      summarize(Count = sum(count)) 
+      summarize(Count = sum(count), .groups = "drop")  # Fixed: Added .groups = "drop"
     
     disposition_list <- c('Upstream Release', 'Brood Collection', 'Food Distribution', 'Wallowa River Outplant', 'Recycled to Fishery', 'Mortality')
     

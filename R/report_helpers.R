@@ -33,35 +33,103 @@ load_yearly_estimates <- function(year, path = NULL) {
     }
   }
   
-  read_csv(path, show_col_types = FALSE) %>%
-    filter(year == !!year) %>%
-    mutate(estimate_date = mdy(estimate_date)) %>%
-    filter(estimate_date == max(estimate_date, na.rm = TRUE)) %>%
+  read_csv(path, show_col_types = FALSE) |>
+    filter(year == !!year) |>
+    mutate(estimate_date = mdy(estimate_date)) |>
+    filter(estimate_date == max(estimate_date, na.rm = TRUE)) |>
     slice(1)
 }
 
+#---- Load and clean Weir Data ----
+# Enhanced get_trap_data() function with GitHub integration - sources GitHub Token to access data.
 
-# ---- Load and Clean Weir Data from CDMS or .rda and TrappingData.xlsx ----
-get_trap_data <- function(trap.year = NULL) { #changed from trap_year
+
+get_trap_data <- function(trap.year = NULL, use_github = TRUE) {
   
-  # Determine correct paths based on working directory
-  if (basename(getwd()) == "documents") {
-    # Running from documents/ folder (Quarto)
-    trapping_data_path <- "../data/TrappingData.csv"
+  # Initialize fins_data variable
+  fins_data <- NULL
+  
+  if (use_github) {
+    # GitHub URL for private repository
+    github_url <- "https://raw.githubusercontent.com/NPTfisheries/LRW-update/master/data/TrappingData.csv"
+    
+    tryCatch({
+      message("Loading data from private GitHub repository...")
+      
+      # Try environment variable first
+      github_token <- Sys.getenv("GITHUB_TOKEN")
+      
+      # If no environment variable, try loading from config file
+      if (github_token == "") {
+        config_path <- if (basename(getwd()) == "documents") {
+          "../github_config.R"
+        } else {
+          "github_config.R"
+        }
+        
+        if (file.exists(config_path)) {
+          source(config_path, local = TRUE)
+          github_token <- GITHUB_TOKEN
+          message("Using token from config file")
+        } else {
+          stop("No GitHub token found in environment or config file")
+        }
+      }
+      
+      if (github_token != "") {
+        # Use httr for authenticated requests to private repo
+        if (!requireNamespace("httr", quietly = TRUE)) {
+          stop("httr package required for private repository access.")
+        }
+        
+        library(httr)
+        response <- GET(github_url, add_headers(Authorization = paste("token", github_token)))
+        
+        if (status_code(response) == 200) {
+          content_text <- content(response, as = "text", encoding = "UTF-8")
+          fins_data <- read_csv(content_text, show_col_types = FALSE)
+          message("✅ Successfully loaded fresh data from private GitHub repository")
+        } else {
+          stop("GitHub API returned status: ", status_code(response))
+        }
+      }
+      
+    }, error = function(e) {
+      message("⚠️ GitHub load failed, trying local file...")
+      message("Error details: ", conditionMessage(e))
+      
+      # Fallback to local file
+      if (basename(getwd()) == "documents") {
+        trapping_data_path <- "../data/TrappingData.csv"
+      } else {
+        trapping_data_path <- "data/TrappingData.csv"
+      }
+      
+      if (!file.exists(trapping_data_path)) {
+        stop("Neither GitHub data nor local TrappingData.csv found.")
+      }
+      
+      fins_data <<- read_csv(trapping_data_path, show_col_types = FALSE)
+      message("📁 Using local fallback data")
+    })
+    
   } else {
-    # Running from root directory (Shiny app)
-    trapping_data_path <- "data/TrappingData.csv"
+    # Original local file logic
+    if (basename(getwd()) == "documents") {
+      trapping_data_path <- "../data/TrappingData.csv"
+    } else {
+      trapping_data_path <- "data/TrappingData.csv"
+    }
+    
+    if (!file.exists(trapping_data_path)) {
+      stop("TrappingData.csv not found locally.")
+    }
+    
+    fins_data <- read_csv(trapping_data_path, show_col_types = FALSE)
+    message("📁 Using local data file")
   }
   
-  # Check if file exists
-  if (!file.exists(trapping_data_path)) {
-    stop("TrappingData.csv not found. Make sure the nightly download has run successfully.")
-  }
-  
-  # Import FINS data
-  fins_data <- read_csv(trapping_data_path, show_col_types = FALSE)
-
-  # Clean weir data
+  # Clean weir data (existing logic)
   AdultWeirData_clean <- clean_weirData(fins_data) |>
     mutate(
       MonthDay = format(as.Date(trapped_date), "%m/%d"),
@@ -70,12 +138,12 @@ get_trap_data <- function(trap.year = NULL) { #changed from trap_year
   
   # Apply year filter if specified
   if (!is.null(trap.year)) {
-    grsme_df <- AdultWeirData_clean |> filter(trap.year == !!trap.year)
+    grsme_df <- AdultWeirData_clean |> filter(trap_year == !!trap.year)
   } else {
     grsme_df <- AdultWeirData_clean
   }
   
-  # Return both cleaned datasets in a named list
+  # Return both cleaned datasets
   list(
     AdultWeirData_clean = AdultWeirData_clean,
     grsme_df = grsme_df
@@ -85,8 +153,21 @@ get_trap_data <- function(trap.year = NULL) { #changed from trap_year
 # ---- Make Trap Date ----
 
 make_trap_date <- function(month_day, year) {
-  ymd(paste(year, month_day, sep = "-"))
+  # Improved error handling for date parsing
+  result <- suppressWarnings(ymd(paste(year, month_day, sep = "-")))
+  
+  # Handle cases where date parsing fails
+  if (any(is.na(result))) {
+    # Try parsing with different separator
+    result <- suppressWarnings(ymd(paste(year, gsub("/", "-", month_day), sep = "-")))
+  }
+  
+  return(result)
 }
+
+# make_trap_date <- function(month_day, year) {
+#   ymd(paste(year, month_day, sep = "-"))
+# }
 
 #---- Extract Broodstock Summary Numbers (Updated with Jacks) ----
 extract_broodstock_summary <- function(broodstock_data) {
@@ -102,7 +183,7 @@ extract_broodstock_summary <- function(broodstock_data) {
   }
   
   # Find the "Total" row
-  total_row <- broodstock_data %>%
+  total_row <- broodstock_data |>
     filter(str_detect(`Week Start`, "Total"))
   
   if (nrow(total_row) == 0) {
@@ -149,15 +230,15 @@ extract_broodstock_summary <- function(broodstock_data) {
 extract_jack_broodstock <- function(data, trap_year) {
   
   # Filter for hatchery jacks collected for broodstock
-  jack_brood <- data %>%
+  jack_brood <- data |>
     filter(
       trap_year == !!trap_year,
       species == "Chinook",
       origin == "Hatchery",
       age_designation %in% c('Jack/Jill', 'Mini-Jack'),
       moved_to == "Lookingglass Fish Hatchery Inbox"
-    ) %>%
-    summarise(hj_brood_sum = sum(count, na.rm = TRUE)) %>%
+    ) |>
+    summarise(hj_brood_sum = sum(count, na.rm = TRUE)) |>
     pull(hj_brood_sum)
   
   # Return 0 if no data
@@ -286,7 +367,7 @@ prepare_megadf <- function(trap.year, grsme_df, weir_data_clean) {
       MonthDay = format(as.Date(record_date), "%m/%d")
     ) |>
     group_by(MonthDay) |>
-    summarise(MeanDailyFlow = mean(mean_daily_flow_cfs, na.rm = TRUE)) |>
+    summarise(MeanDailyFlow = mean(mean_daily_flow_cfs, na.rm = TRUE), .groups = "drop") |>
     mutate(
       facet = paste0(trap.year - 5, "-", trap.year - 1, " Average")
     )
@@ -297,13 +378,27 @@ prepare_megadf <- function(trap.year, grsme_df, weir_data_clean) {
     mutate(
       trapped_date = make_trap_date(MonthDay, trap.year)
     ) |>
-    filter( # This filter is klling this section when imported from helpers.
+    # Filter out rows where date parsing failed
+    filter(!is.na(trapped_date)) |>
+    filter(
       between(
         trapped_date,
         ymd(paste0(trap.year, "-05-15")),
         ymd(paste0(trap.year, "-09-21"))
       )
     )
+  
+  # flow_all <- bind_rows(flow_df, flow_df_h) |>
+  #   mutate(
+  #     trapped_date = make_trap_date(MonthDay, trap.year)
+  #   ) |>
+  #   filter( # This filter is klling this section when imported from helpers.
+  #     between(
+  #       trapped_date,
+  #       ymd(paste0(trap.year, "-05-15")),
+  #       ymd(paste0(trap.year, "-09-21"))
+  #     )
+  #   )
 
   
   lrw_catch <- grsme_df |>
@@ -405,7 +500,7 @@ generate_lrw_megaplot <- function(megadf,
     geom_line(
       aes(y = MeanDailyFlow * scale_factor, linetype = "Discharge"),
       color = "blue",
-      size = 1
+      linewidth = 1  # Fixed: Changed from size = 1 to linewidth = 1
     ) +
     scale_y_continuous(
       name = "Number of Chinook Adults",
@@ -426,7 +521,7 @@ generate_lrw_megaplot <- function(megadf,
     ) +
     scale_fill_manual(values = c("Natural" = "#FDE735FF", "Hatchery" = "#482677FF")) +
     facet_grid(rows = vars(facet)) +
-    guides(color = FALSE) +
+    guides(color = "none") +  # Fixed: Changed from FALSE to "none"
     theme_bw() +
     theme(
       axis.text.x = element_text(hjust = 1, angle = 45, size = 14),
