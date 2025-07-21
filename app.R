@@ -269,11 +269,15 @@ ui <- dashboardPage(
 # Define Server
 server <- function(input, output, session) {
   
-  # Load all data at startup (non-reactive)
+  # Load all data at startup (non-reactive) - ENHANCED
   estimates_data <- load_yearly_estimates(current_year)
   
   trap_data <- get_trap_data(trap.year = current_year)
   grsme_df <- trap_data$grsme_df
+  
+  # Store the actual data timestamp and source
+  actual_data_timestamp <- trap_data$data_timestamp
+  data_source_info <- trap_data$data_source
   
   # Calculate dispositions and extract components (updated section in app.R server)
   dispositions_result <- calculate_dispositions(grsme_df, current_year)
@@ -303,13 +307,18 @@ server <- function(input, output, session) {
     weir_data_clean = trap_data$AdultWeirData_clean
   )
   
-  # Last update time
+  # UPDATED: Last update time - prioritize GitHub data timestamp
   output$last_update <- renderText({
-    if(file.exists("data/TrappingData.csv")) {
+    # Always use actual_data_timestamp if available (from GitHub)
+    if (!is.null(actual_data_timestamp)) {
+      format(actual_data_timestamp, "%m/%d/%Y %H:%M")
+    } 
+    # Only fall back to local file if no GitHub timestamp
+    else if (file.exists("data/TrappingData.csv")) {
       file_time <- file.info("data/TrappingData.csv")$mtime
       format(file_time, "%m/%d/%Y %H:%M")
     } else {
-      "No data file found"
+      "No data available"
     }
   })
   

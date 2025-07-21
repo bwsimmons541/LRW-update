@@ -43,15 +43,19 @@ load_yearly_estimates <- function(year, path = NULL) {
 #---- Load and clean Weir Data ----
 # Enhanced get_trap_data() function with GitHub integration - sources GitHub Token to access data.
 
+# Enhanced get_trap_data function that returns data timestamp
+# Replace your existing function in R/report_helpers.R
 
 get_trap_data <- function(trap.year = NULL, use_github = TRUE) {
   
-  # Initialize fins_data variable
+  # Initialize variables
   fins_data <- NULL
+  data_timestamp <- NULL
+  data_source <- "Unknown"
   
   if (use_github) {
     # GitHub URL for private repository
-    github_url <- "https://raw.githubusercontent.com/NPTfisheries/LRW-update/master/data/TrappingData.csv"
+    github_url <- "https://raw.githubusercontent.com/NPTfisheries/LRW-update/refs/heads/master/data/TrappingData.csv?token=GHSAT0AAAAAADHNP56J4OESRMGP6ATEKMXY2D6SOPQ"
     
     tryCatch({
       message("Loading data from private GitHub repository...")
@@ -72,7 +76,9 @@ get_trap_data <- function(trap.year = NULL, use_github = TRUE) {
           github_token <- GITHUB_TOKEN
           message("Using token from config file")
         } else {
-          stop("No GitHub token found in environment or config file")
+          # Try without authentication for public repo
+          message("No GitHub token found, trying public access...")
+          github_token <- ""
         }
       }
       
@@ -88,10 +94,27 @@ get_trap_data <- function(trap.year = NULL, use_github = TRUE) {
         if (status_code(response) == 200) {
           content_text <- content(response, as = "text", encoding = "UTF-8")
           fins_data <- read_csv(content_text, show_col_types = FALSE)
+          
+          # Get the last-modified header if available
+          last_modified <- headers(response)$`last-modified`
+          if (!is.null(last_modified)) {
+            # Parse the HTTP date format
+            data_timestamp <- as.POSIXct(last_modified, format = "%a, %d %b %Y %H:%M:%S", tz = "GMT")
+          } else {
+            data_timestamp <- Sys.time()
+          }
+          
+          data_source <- "GitHub (authenticated)"
           message("✅ Successfully loaded fresh data from private GitHub repository")
         } else {
           stop("GitHub API returned status: ", status_code(response))
         }
+      } else {
+        # Try direct read for public repo
+        fins_data <- read_csv(github_url, show_col_types = FALSE)
+        data_timestamp <- Sys.time()  # Best we can do without authentication
+        data_source <- "GitHub (public)"
+        message("✅ Successfully loaded data from public GitHub repository")
       }
       
     }, error = function(e) {
@@ -110,6 +133,12 @@ get_trap_data <- function(trap.year = NULL, use_github = TRUE) {
       }
       
       fins_data <<- read_csv(trapping_data_path, show_col_types = FALSE)
+      
+      # Get local file timestamp
+      file_info <- file.info(trapping_data_path)
+      data_timestamp <<- file_info$mtime
+      data_source <<- "Local file"
+      
       message("📁 Using local fallback data")
     })
     
@@ -126,6 +155,12 @@ get_trap_data <- function(trap.year = NULL, use_github = TRUE) {
     }
     
     fins_data <- read_csv(trapping_data_path, show_col_types = FALSE)
+    
+    # Get local file timestamp
+    file_info <- file.info(trapping_data_path)
+    data_timestamp <- file_info$mtime
+    data_source <- "Local file"
+    
     message("📁 Using local data file")
   }
   
@@ -143,31 +178,259 @@ get_trap_data <- function(trap.year = NULL, use_github = TRUE) {
     grsme_df <- AdultWeirData_clean
   }
   
-  # Return both cleaned datasets
+  # Return enhanced data with timestamp and source info
   list(
     AdultWeirData_clean = AdultWeirData_clean,
-    grsme_df = grsme_df
+    grsme_df = grsme_df,
+    data_timestamp = data_timestamp,
+    data_source = data_source
   )
 }
 
-# ---- Make Trap Date ----
+    # ----  Simplified get trap data for public repo ----    
+    # # Dramatically simplified get_trap_data function for public repository
+    # # Replace your entire get_trap_data function with this:
+    # 
+    # get_trap_data <- function(trap.year = NULL, use_github = TRUE) {
+    #   
+    #   # Initialize variables
+    #   fins_data <- NULL
+    #   data_timestamp <- NULL
+    #   data_source <- "Unknown"
+    #   
+    #   if (use_github) {
+    #     # Simple public GitHub URL - no authentication needed!
+    #     github_url <- "https://raw.githubusercontent.com/NPTfisheries/LRW-update/master/data/TrappingData.csv"
+    #     
+    #     tryCatch({
+    #       message("Loading data from public GitHub repository...")
+    #       
+    #       # Simple direct read - no authentication needed
+    #       fins_data <- read_csv(github_url, show_col_types = FALSE)
+    #       
+    #       # Get actual file timestamp from GitHub API (public access)
+    #       tryCatch({
+    #         if (requireNamespace("httr", quietly = TRUE)) {
+    #           library(httr)
+    #           
+    #           # GitHub API for public repos - no auth needed
+    #           api_url <- "https://api.github.com/repos/NPTfisheries/LRW-update/commits?path=data/TrappingData.csv&per_page=1"
+    #           response <- GET(api_url)
+    #           
+    #           if (status_code(response) == 200) {
+    #             commits <- content(response, as = "parsed")
+    #             if (length(commits) > 0) {
+    #               commit_date <- commits[[1]]$commit$author$date
+    #               data_timestamp <- as.POSIXct(commit_date, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    #               # Convert to Pacific Time
+    #               data_timestamp <- as.POSIXct(format(data_timestamp, tz = "America/Los_Angeles"), tz = "America/Los_Angeles")
+    #               message("✅ Got actual file timestamp from GitHub: ", format(data_timestamp, "%Y-%m-%d %H:%M:%S"))
+    #             }
+    #           }
+    #         }
+    #       }, error = function(e) {
+    #         message("Could not get GitHub timestamp, using current time")
+    #       })
+    #       
+    #       # Fallback to current time if API didn't work
+    #       if (is.null(data_timestamp)) {
+    #         data_timestamp <- Sys.time()
+    #       }
+    #       
+    #       data_source <- "GitHub (public)"
+    #       message("✅ Successfully loaded data from public GitHub repository")
+    #       
+    #     }, error = function(e) {
+    #       message("⚠️ GitHub load failed, trying local file...")
+    #       message("Error details: ", conditionMessage(e))
+    #       
+    #       # Fallback to local file
+    #       local_path <- if (basename(getwd()) == "documents") {
+    #         "../data/TrappingData.csv"
+    #       } else {
+    #         "data/TrappingData.csv"
+    #       }
+    #       
+    #       if (!file.exists(local_path)) {
+    #         stop("Neither GitHub data nor local TrappingData.csv found.")
+    #       }
+    #       
+    #       fins_data <<- read_csv(local_path, show_col_types = FALSE)
+    #       file_info <- file.info(local_path)
+    #       data_timestamp <<- file_info$mtime
+    #       data_source <<- "Local file"
+    #       message("📁 Using local fallback data")
+    #     })
+    #     
+    #   } else {
+    #     # Local file mode
+    #     local_path <- if (basename(getwd()) == "documents") {
+    #       "../data/TrappingData.csv"
+    #     } else {
+    #       "data/TrappingData.csv"
+    #     }
+    #     
+    #     if (!file.exists(local_path)) {
+    #       stop("TrappingData.csv not found locally.")
+    #     }
+    #     
+    #     fins_data <- read_csv(local_path, show_col_types = FALSE)
+    #     file_info <- file.info(local_path)
+    #     data_timestamp <- file_info$mtime
+    #     data_source <- "Local file"
+    #     message("📁 Using local data file")
+    #   }
+    #   
+    #   # Clean weir data (existing logic)
+    #   AdultWeirData_clean <- clean_weirData(fins_data) |>
+    #     mutate(
+    #       MonthDay = format(as.Date(trapped_date), "%m/%d"),
+    #       count = as.double(count)
+    #     )
+    #   
+    #   # Apply year filter if specified
+    #   if (!is.null(trap.year)) {
+    #     grsme_df <- AdultWeirData_clean |> filter(trap_year == !!trap.year)
+    #   } else {
+    #     grsme_df <- AdultWeirData_clean
+    #   }
+    #   
+    #   # Return enhanced data with timestamp and source info
+    #   list(
+    #     AdultWeirData_clean = AdultWeirData_clean,
+    #     grsme_df = grsme_df,
+    #     data_timestamp = data_timestamp,
+    #     data_source = data_source
+    #   )
+    # }
+
+    #---- OLD GET TRAP DATA FUNCTION FOR PRIVATE REPO ----
+    # get_trap_data <- function(trap.year = NULL, use_github = TRUE) {
+    #   
+    #   # Initialize fins_data variable
+    #   fins_data <- NULL
+    #   
+    #   if (use_github) {
+    #     # GitHub URL for private repository
+    #     github_url <- "https://raw.githubusercontent.com/NPTfisheries/LRW-update/master/data/TrappingData.csv"
+    #     
+    #     tryCatch({
+    #       message("Loading data from private GitHub repository...")
+    #       
+    #       # Try environment variable first
+    #       github_token <- Sys.getenv("GITHUB_TOKEN")
+    #       
+    #       # If no environment variable, try loading from config file
+    #       if (github_token == "") {
+    #         config_path <- if (basename(getwd()) == "documents") {
+    #           "../github_config.R"
+    #         } else {
+    #           "github_config.R"
+    #         }
+    #         
+    #         if (file.exists(config_path)) {
+    #           source(config_path, local = TRUE)
+    #           github_token <- GITHUB_TOKEN
+    #           message("Using token from config file")
+    #         } else {
+    #           stop("No GitHub token found in environment or config file")
+    #         }
+    #       }
+    #       
+    #       if (github_token != "") {
+    #         # Use httr for authenticated requests to private repo
+    #         if (!requireNamespace("httr", quietly = TRUE)) {
+    #           stop("httr package required for private repository access.")
+    #         }
+    #         
+    #         library(httr)
+    #         response <- GET(github_url, add_headers(Authorization = paste("token", github_token)))
+    #         
+    #         if (status_code(response) == 200) {
+    #           content_text <- content(response, as = "text", encoding = "UTF-8")
+    #           fins_data <- read_csv(content_text, show_col_types = FALSE)
+    #           message("✅ Successfully loaded fresh data from private GitHub repository")
+    #         } else {
+    #           stop("GitHub API returned status: ", status_code(response))
+    #         }
+    #       }
+    #       
+    #     }, error = function(e) {
+    #       message("⚠️ GitHub load failed, trying local file...")
+    #       message("Error details: ", conditionMessage(e))
+    #       
+    #       # Fallback to local file
+    #       if (basename(getwd()) == "documents") {
+    #         trapping_data_path <- "../data/TrappingData.csv"
+    #       } else {
+    #         trapping_data_path <- "data/TrappingData.csv"
+    #       }
+    #       
+    #       if (!file.exists(trapping_data_path)) {
+    #         stop("Neither GitHub data nor local TrappingData.csv found.")
+    #       }
+    #       
+    #       fins_data <<- read_csv(trapping_data_path, show_col_types = FALSE)
+    #       message("📁 Using local fallback data")
+    #     })
+    #     
+    #   } else {
+    #     # Original local file logic
+    #     if (basename(getwd()) == "documents") {
+    #       trapping_data_path <- "../data/TrappingData.csv"
+    #     } else {
+    #       trapping_data_path <- "data/TrappingData.csv"
+    #     }
+    #     
+    #     if (!file.exists(trapping_data_path)) {
+    #       stop("TrappingData.csv not found locally.")
+    #     }
+    #     
+    #     fins_data <- read_csv(trapping_data_path, show_col_types = FALSE)
+    #     message("📁 Using local data file")
+    #   }
+    #   
+    #   # Clean weir data (existing logic)
+    #   AdultWeirData_clean <- clean_weirData(fins_data) |>
+    #     mutate(
+    #       MonthDay = format(as.Date(trapped_date), "%m/%d"),
+    #       count = as.double(count)
+    #     )
+    #   
+    #   # Apply year filter if specified
+    #   if (!is.null(trap.year)) {
+    #     grsme_df <- AdultWeirData_clean |> filter(trap_year == !!trap.year)
+    #   } else {
+    #     grsme_df <- AdultWeirData_clean
+    #   }
+    #   
+    #   # Return both cleaned datasets
+    #   list(
+    #     AdultWeirData_clean = AdultWeirData_clean,
+    #     grsme_df = grsme_df
+    #   )
+    # }
+    # 
+
+
+# # ---- Make Trap Date ----
 
 make_trap_date <- function(month_day, year) {
   # Improved error handling for date parsing
   result <- suppressWarnings(ymd(paste(year, month_day, sep = "-")))
-  
+
   # Handle cases where date parsing fails
   if (any(is.na(result))) {
     # Try parsing with different separator
     result <- suppressWarnings(ymd(paste(year, gsub("/", "-", month_day), sep = "-")))
   }
-  
+
   return(result)
 }
 
-# make_trap_date <- function(month_day, year) {
-#   ymd(paste(year, month_day, sep = "-"))
-# }
+    # make_trap_date <- function(month_day, year) {
+    #   ymd(paste(year, month_day, sep = "-"))
+    # }
 
 #---- Extract Broodstock Summary Numbers (Updated with Jacks) ----
 extract_broodstock_summary <- function(broodstock_data) {
