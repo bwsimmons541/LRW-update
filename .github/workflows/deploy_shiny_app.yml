@@ -9,7 +9,7 @@ on:
     - cron: '0 3 * * *'
   workflow_dispatch:  # Allow manual triggering
   
-  # Optionally: trigger after successful FINS data download
+  # Trigger after successful FINS data download
   workflow_run:
     workflows: ["Nightly FINS Data Download"]
     types:
@@ -80,7 +80,7 @@ jobs:
           cat("Shiny app deployed successfully at:", format(Sys.time()), "\n")
         shell: Rscript {0}
 
-      - name: Log deployment
+      - name: Log deployment success
         run: |
-          echo "Deployment completed at: $(date)"
-          echo "App URL: https://nptfisheries.shinyapps.io/LRW-Chinook-Summary/"
+          echo "✅ Deployment completed at: $(date)"
+          echo "🌐 App URL: https://nptfisheries.shinyapps.io/LRW-Chinook-Summary/"
