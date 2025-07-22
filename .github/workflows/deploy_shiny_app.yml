@@ -36,11 +36,24 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+          sudo apt-get install -y \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libfontconfig1-dev \
+            libcairo2-dev \
+            libfreetype6-dev \
+            libpng-dev \
+            libtiff5-dev \
+            libjpeg-dev \
+            libharfbuzz-dev \
+            libfribidi-dev \
+            libgit2-dev \
+            pandoc
 
       - name: Install R packages
         run: |
-          # Install only CRAN packages - much faster and more reliable!
+          # Install only CRAN packages - with proper system dependencies now available
           install.packages(c(
             "rsconnect",
             "shiny", 
@@ -58,6 +71,13 @@ jobs:
             "httr",
             "jsonlite"
           ), repos = "https://cran.rstudio.com/")
+          
+          # Verify flextable installed correctly
+          if (requireNamespace("flextable", quietly = TRUE)) {
+            cat("✅ flextable installed successfully\n")
+          } else {
+            stop("❌ flextable failed to install - this is required")
+          }
           
           cat("✅ All CRAN packages installed successfully\n")
           cat("📦 No GitHub packages needed - using local functions\n")
