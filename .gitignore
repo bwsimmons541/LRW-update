@@ -34,3 +34,6 @@ github_config.R
 # Credentials and sensitive files
 .Renviron
 rsconnect/
+
+# Development and internal documentation
+DEVELOPMENT_NOTES.md
