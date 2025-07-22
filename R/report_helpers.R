@@ -6,19 +6,21 @@ library(lubridate)
 library(tidyr)
 library(ggplot2)
 library(flextable)
-library(cuyem)
+# library(cuyem)  # REMOVED - using local functions instead
 library(stringr)
 
-# ---- Dynamic Source GRSME functions ----
+# ---- Source local cuyem functions and other dependencies ----
 # Determine correct paths based on working directory
 if (basename(getwd()) == "documents") {
   # Running from documents/ folder (Quarto)
-  source("../R/sumGRSMEdisp.R")  # FINS Disposition Summary
-  source("../R/sumGRSMEbrood.R") # Brood Collection Summary
+  source("../R/local_cuyem_functions.R")  # Local cuyem functions
+  source("../R/sumGRSMEdisp.R")           # FINS Disposition Summary
+  source("../R/sumGRSMEbrood.R")          # Brood Collection Summary
 } else {
   # Running from root directory (Shiny app)
-  source("R/sumGRSMEdisp.R")     # FINS Disposition Summary
-  source("R/sumGRSMEbrood.R")    # Brood Collection Summary
+  source("R/local_cuyem_functions.R")     # Local cuyem functions
+  source("R/sumGRSMEdisp.R")              # FINS Disposition Summary
+  source("R/sumGRSMEbrood.R")             # Brood Collection Summary
 }
 
 # ---- Load Yearly Estimates ----
@@ -39,7 +41,6 @@ load_yearly_estimates <- function(year, path = NULL) {
     filter(estimate_date == max(estimate_date, na.rm = TRUE)) |>
     slice(1)
 }
-
 #---- Load and clean Weir Data ----
 # Enhanced get_trap_data() function with GitHub integration - sources GitHub Token to access data.
 

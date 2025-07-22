@@ -38,9 +38,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
 
-      - name: Install R packages
+- name: Install R packages
         run: |
-          # Install packages individually to handle cuyem properly
+          # Install only CRAN packages - much faster and more reliable!
           install.packages(c(
             "rsconnect",
             "shiny", 
@@ -59,19 +59,8 @@ jobs:
             "jsonlite"
           ), repos = "https://cran.rstudio.com/")
           
-          # Install cuyem from Ryan Kinzer's GitHub repository
-          if (!requireNamespace("remotes", quietly = TRUE)) {
-            install.packages("remotes")
-          }
-          
-          # Try to install cuyem - if it fails, continue anyway
-          tryCatch({
-            remotes::install_github("ryankinzer/cuyem", force = TRUE)
-            cat("✅ Successfully installed cuyem package\n")
-          }, error = function(e) {
-            cat("⚠️ Could not install cuyem package:", conditionMessage(e), "\n")
-            cat("Continuing deployment - app may need to handle missing cuyem gracefully\n")
-          })
+          cat("✅ All CRAN packages installed successfully\n")
+          cat("📦 No GitHub packages needed - using local functions\n")
         shell: Rscript {0}
 
       - name: Deploy Shiny App
