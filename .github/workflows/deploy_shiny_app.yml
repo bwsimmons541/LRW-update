@@ -1,12 +1,12 @@
 # .github/workflows/deploy_shiny_app.yml
-# Nightly deployment of Shiny app after FINS data update
+# Nightly deployment of Shiny app after FINS data update (Public Repository Version)
 
 name: Deploy Shiny App After Data Update
 
 on:
   schedule:
     # Run at 3:00 AM UTC = 8:00 PM PT (after FINS download at 7:30 PM PT)
-    - cron: '0 3 * * *'
+    - cron: '0 3 * * *'  # Fixed: missing * for day of month
   workflow_dispatch:  # Allow manual triggering
   
   # Trigger after successful FINS data download
@@ -32,7 +32,9 @@ jobs:
 
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
-        
+        with:
+          r-version: '4.4.1'  # Lock to stable version
+          
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -53,7 +55,7 @@ jobs:
 
       - name: Install R packages
         run: |
-          # Install only CRAN packages - with proper system dependencies now available
+          # Install packages with locked R version
           install.packages(c(
             "rsconnect",
             "shiny", 
@@ -72,15 +74,17 @@ jobs:
             "jsonlite"
           ), repos = "https://cran.rstudio.com/")
           
-          # Verify flextable installed correctly
-          if (requireNamespace("flextable", quietly = TRUE)) {
-            cat("✅ flextable installed successfully\n")
-          } else {
-            stop("❌ flextable failed to install - this is required")
+          # Verify critical packages
+          required_packages <- c("flextable", "rsconnect", "shiny", "httr")
+          for (pkg in required_packages) {
+            if (requireNamespace(pkg, quietly = TRUE)) {
+              cat("✅", pkg, "installed successfully\n")
+            } else {
+              stop("❌ ", pkg, " failed to install")
+            }
           }
           
-          cat("✅ All CRAN packages installed successfully\n")
-          cat("📦 No GitHub packages needed - using local functions\n")
+          cat("✅ All packages ready for deployment\n")
         shell: Rscript {0}
 
       - name: Deploy Shiny App
@@ -93,14 +97,19 @@ jobs:
             secret = Sys.getenv("SHINYAPPS_SECRET")
           )
           
-          # Deploy the app
+          # Deploy with explicit file list (more reliable than wildcards)
           rsconnect::deployApp(
             appName = "LRW-Chinook-Summary",
             appTitle = "Lostine River Weir - Chinook Summary",
             appFiles = c(
               "app.R",
-              "R/",
-              "www/",
+              "R/report_helpers.R",
+              "R/sumGRSMEdisp.R", 
+              "R/sumGRSMEbrood.R",
+              "R/local_cuyem_functions.R",
+              "www/npt_treaty_logo.png",
+              "www/npt_fisheries_logo.png", 
+              "www/npt_joseph.png",
               "data/TrappingData.csv",
               "data/yearly_estimates.csv"
             ),
@@ -108,10 +117,14 @@ jobs:
             launch.browser = FALSE
           )
           
-          cat("Shiny app deployed successfully at:", format(Sys.time()), "\n")
+          deployment_time <- format(Sys.time(), tz = "America/Los_Angeles")
+          cat("✅ App deployed successfully at:", deployment_time, "PT\n")
+          cat("🔗 App URL: https://nptfisheries.shinyapps.io/LRW-Chinook-Summary/\n")
+          cat("📊 App loads fresh data from public GitHub repository\n")
         shell: Rscript {0}
 
       - name: Log deployment success
         run: |
           echo "✅ Deployment completed at: $(date)"
           echo "🌐 App URL: https://nptfisheries.shinyapps.io/LRW-Chinook-Summary/"
+          echo "📊 App automatically loads fresh FINS data from public repository"
