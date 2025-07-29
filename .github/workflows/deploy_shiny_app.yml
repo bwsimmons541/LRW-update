@@ -67,15 +67,16 @@ jobs:
             "ggplot2",
             "flextable",
             "htmltools",
-            "lubridate",
-            "tidyr",
-            "stringr",
+            "lubridate",    # For epiweek(), floor_date()
+            "tidyr",        # For spread(), gather()
+            "stringr",      # For str_detect(), str_replace()
             "httr",
-            "jsonlite"
+            "jsonlite",
+            "viridis"       # Added just in case (from @import comments)
           ), repos = "https://cran.rstudio.com/")
           
           # Verify critical packages
-          required_packages <- c("flextable", "rsconnect", "shiny", "httr")
+          required_packages <- c("flextable", "rsconnect", "shiny", "httr", "lubridate", "stringr")
           for (pkg in required_packages) {
             if (requireNamespace(pkg, quietly = TRUE)) {
               cat("✅", pkg, "installed successfully\n")
@@ -84,9 +85,17 @@ jobs:
             }
           }
           
+          # Test specific functions that might cause issues
+          library(lubridate)
+          library(stringr)
+          test_date <- as.Date("2025-07-28")
+          cat("Testing epiweek function:", epiweek(test_date), "\n")
+          cat("Testing str_detect function:", str_detect("test", "es"), "\n")
+          
           cat("✅ All packages ready for deployment\n")
         shell: Rscript {0}
 
+      
       - name: Deploy Shiny App
         run: |
           # Set up rsconnect credentials
@@ -97,19 +106,14 @@ jobs:
             secret = Sys.getenv("SHINYAPPS_SECRET")
           )
           
-          # Deploy with explicit file list (more reliable than wildcards)
+          # Deploy with directory-based deployment (FIXED)
           rsconnect::deployApp(
             appName = "LRW-Chinook-Summary",
             appTitle = "Lostine River Weir - Chinook Summary",
             appFiles = c(
               "app.R",
-              "R/report_helpers.R",
-              "R/sumGRSMEdisp.R", 
-              "R/sumGRSMEbrood.R",
-              "R/local_cuyem_functions.R",
-              "www/npt_treaty_logo.png",
-              "www/npt_fisheries_logo.png", 
-              "www/npt_joseph.png",
+              "R/",                    # Deploy entire R directory
+              "www/",                  # Deploy entire www directory  
               "data/TrappingData.csv",
               "data/yearly_estimates.csv"
             ),

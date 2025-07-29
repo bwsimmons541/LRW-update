@@ -7,7 +7,7 @@
 #'
 #' @examples 
 #'
-#' @import tidyverse, lubridate, ggplot2, viridis
+#' @import tidyverse, lubridate, ggplot2
 #' @export
 #' @return NULL
 
