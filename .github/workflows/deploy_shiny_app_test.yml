@@ -1,0 +1,145 @@
+# .github/workflows/deploy_shiny_app_test.yml
+# Test deployment to personal shinyapps.io account for validation
+
+name: Deploy Shiny App - Test Version
+
+on:
+  # Manual trigger only for testing
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for test deployment'
+        required: false
+        default: 'Testing changes'
+        type: string
+  
+  # Optional: Trigger on pushes to specific branch for testing
+  push:
+    branches:
+      - test-deployment  # Create this branch when you want automatic test deployments
+
+jobs:
+  deploy-test-app:
+    runs-on: ubuntu-latest
+    
+    env:
+      # Use separate secrets for personal account
+      SHINYAPPS_NAME: ${{ secrets.SHINYAPPS_NAME_TEST }}
+      SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN_TEST }}
+      SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET_TEST }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.4.1'  # Lock to stable version
+          
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libfontconfig1-dev \
+            libcairo2-dev \
+            libfreetype6-dev \
+            libpng-dev \
+            libtiff5-dev \
+            libjpeg-dev \
+            libharfbuzz-dev \
+            libfribidi-dev \
+            libgit2-dev \
+            pandoc
+
+      - name: Install R packages
+        run: |
+          # Install packages with locked R version
+          install.packages(c(
+            "rsconnect",
+            "shiny", 
+            "shinydashboard",
+            "DT",
+            "plotly",
+            "readr",
+            "dplyr", 
+            "ggplot2",
+            "flextable",
+            "htmltools",
+            "lubridate",
+            "tidyr",
+            "stringr",
+            "httr",
+            "jsonlite"
+          ), repos = "https://cran.rstudio.com/")
+          
+          # Verify critical packages
+          required_packages <- c("flextable", "rsconnect", "shiny", "httr")
+          for (pkg in required_packages) {
+            if (requireNamespace(pkg, quietly = TRUE)) {
+              cat("✅", pkg, "installed successfully\n")
+            } else {
+              stop("❌ ", pkg, " failed to install")
+            }
+          }
+          
+          cat("✅ All packages ready for test deployment\n")
+        shell: Rscript {0}
+
+      - name: Log deployment info
+        run: |
+          echo "🧪 Starting TEST deployment"
+          echo "📝 Reason: ${{ github.event.inputs.reason || 'Automated test' }}"
+          echo "🕒 Time: $(date)"
+          echo "🎯 Target: brian-simmons.shinyapps.io"
+
+      - name: Deploy Test Shiny App
+        run: |
+          # Set up rsconnect credentials for test account
+          library(rsconnect)
+          rsconnect::setAccountInfo(
+            name = Sys.getenv("SHINYAPPS_NAME"),
+            token = Sys.getenv("SHINYAPPS_TOKEN"),  
+            secret = Sys.getenv("SHINYAPPS_SECRET")
+          )
+          
+          # Deploy with explicit file list (same as production)
+          rsconnect::deployApp(
+            appName = "LRW-Chinook-Summary",
+            appTitle = "Lostine River Weir - Chinook Summary (TEST)",
+            appFiles = c(
+              "app.R",
+              "R/report_helpers.R",
+              "R/sumGRSMEdisp.R", 
+              "R/sumGRSMEbrood.R",
+              "R/local_cuyem_functions.R",
+              "www/npt_treaty_logo.png",
+              "www/npt_fisheries_logo.png", 
+              "www/npt_joseph.png",
+              "data/TrappingData.csv",
+              "data/yearly_estimates.csv"
+            ),
+            forceUpdate = TRUE,
+            launch.browser = FALSE
+          )
+          
+          deployment_time <- format(Sys.time(), tz = "America/Los_Angeles")
+          cat("✅ TEST app deployed successfully at:", deployment_time, "PT\n")
+          cat("🔗 TEST App URL: https://brian-simmons.shinyapps.io/LRW-Chinook-Summary/\n")
+          cat("📊 App loads fresh data from public GitHub repository\n")
+        shell: Rscript {0}
+
+      - name: Log test deployment success
+        run: |
+          echo "✅ TEST deployment completed at: $(date)"
+          echo "🧪 Test App URL: https://brian-simmons.shinyapps.io/LRW-Chinook-Summary/"
+          echo "📊 App automatically loads fresh FINS data from public repository"
+          echo "🎯 Ready for testing before production deployment"
+          echo ""
+          echo "🔄 To deploy to production after testing:"
+          echo "   1. Verify test app works correctly"
+          echo "   2. Run production deployment workflow"
+          echo "   3. Or wait for scheduled nightly deployment"
