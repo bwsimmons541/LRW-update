@@ -119,7 +119,6 @@ jobs:
               "www/npt_treaty_logo.png",
               "www/npt_fisheries_logo.png", 
               "www/npt_joseph.png",
-              "data/TrappingData.csv",
               "data/yearly_estimates.csv"
             ),
             forceUpdate = TRUE,
