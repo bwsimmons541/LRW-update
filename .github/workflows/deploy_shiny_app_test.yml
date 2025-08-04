@@ -96,6 +96,23 @@ jobs:
           echo "🕒 Time: $(date)"
           echo "🎯 Target: brian-simmons.shinyapps.io"
 
+      - name: Debug - Check what files exist
+        run: |
+          echo "=== Current working directory ==="
+          pwd
+          echo ""
+          echo "=== Files in root directory ==="
+          ls -la
+          echo ""
+          echo "=== Files in R/ directory ==="
+          ls -la R/
+          echo ""
+          echo "=== Files in www/ directory ==="
+          ls -la www/
+          echo ""
+          echo "=== Files in data/ directory ==="
+          ls -la data/
+
       - name: Deploy Test Shiny App
         run: |
           # Set up rsconnect credentials for test account
@@ -106,19 +123,33 @@ jobs:
             secret = Sys.getenv("SHINYAPPS_SECRET")
           )
           
-          # Deploy with explicit file list (same as production)
+          # Show what we're about to deploy
+          cat("=== Checking files before deployment ===\n")
+          required_files <- c(
+            "app.R",
+            "R/report_helpers.R",
+            "R/sumGRSMEdisp.R", 
+            "R/sumGRSMEbrood.R",
+            "R/local_cuyem_functions.R",
+            "data/yearly_estimates.csv"
+          )
+          
+          for (file in required_files) {
+            if (file.exists(file)) {
+              cat("✅", file, "exists\n")
+            } else {
+              cat("❌", file, "MISSING\n")
+            }
+          }
+          
+          # Deploy with directory-based deployment
           rsconnect::deployApp(
             appName = "LRW-Chinook-Summary",
             appTitle = "Lostine River Weir - Chinook Summary (TEST)",
             appFiles = c(
               "app.R",
-              "R/report_helpers.R",
-              "R/sumGRSMEdisp.R", 
-              "R/sumGRSMEbrood.R",
-              "R/local_cuyem_functions.R",
-              "www/npt_treaty_logo.png",
-              "www/npt_fisheries_logo.png", 
-              "www/npt_joseph.png",
+              "R/",
+              "www/",
               "data/yearly_estimates.csv"
             ),
             forceUpdate = TRUE,
